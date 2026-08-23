@@ -19,4 +19,5 @@
     <color name="oda_on_accent">#06131D</color>
     <color name="oda_success">#147A61</color>
     <color name="oda_error">#A84242</color>
+    <color name="settings_surface">#F4F7FA</color>
 </resources>
