@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import it.smg.hu.R;
 import it.smg.libs.common.Log;
 import it.smg.libs.aasdk.usb.LibUsb;
 import it.smg.libs.aasdk.usb.LibUsbDevice;
@@ -81,7 +82,7 @@ public class USBManager {
         }
         if (Log.isInfo()) Log.i(TAG, "handleUsbAttached " + device);
         lastDevice_ = device;
-        ConnectionManager.instance().transportAvailable("modeUSB", "USB device detected");
+        ConnectionManager.instance().transportAvailable("modeUSB", ctx_.getString(R.string.connection_usb_detected));
 
         boolean deviceHasPermission = usbManager_.hasPermission(device);
         if (Log.isInfo()) Log.i(TAG, "deviceHasPermission " + deviceHasPermission);
@@ -89,7 +90,7 @@ public class USBManager {
             if (Log.isDebug()) Log.d(TAG, "Request permission");
             Intent i = new Intent(ACTION_USB_PERMISSION);
             PendingIntent permissionIntent = PendingIntent.getBroadcast(ctx_, 0, i, PendingIntent.FLAG_ONE_SHOT);
-            ConnectionManager.instance().permissionPending("Waiting for USB permission");
+            ConnectionManager.instance().permissionPending(ctx_.getString(R.string.connection_usb_permission));
             usbManager_.requestPermission(device, permissionIntent);
             return;
         }
@@ -98,14 +99,14 @@ public class USBManager {
         if (!isAoap) {
             if (Log.isInfo()) Log.i(TAG, "Request aoap");
             if (requestAOAP(device)) {
-                ConnectionManager.instance().switchingToAoap("Preparing Android Auto USB accessory");
+                ConnectionManager.instance().switchingToAoap(ctx_.getString(R.string.connection_usb_preparing));
             } else {
-                ConnectionManager.instance().failed("Could not switch USB device to Android Auto mode");
+                ConnectionManager.instance().failed(ctx_.getString(R.string.connection_usb_switch_error));
             }
         } else {
             if (Log.isDebug()) Log.d(TAG, "Device is aoap");
             usbDevice_ = libUsb_.createDevice(device, usbManager_);
-            ConnectionManager.instance().transportAvailable("modeUSB", "Android Auto USB accessory ready");
+            ConnectionManager.instance().transportAvailable("modeUSB", ctx_.getString(R.string.connection_usb_ready));
 
             if (Log.isDebug()) Log.d(TAG, "send local broadcast ATTACH_AOAP_DEVICE");
             Intent aoapDeviceIntent = new Intent(ATTACH_AOAP_DEVICE);
@@ -116,11 +117,11 @@ public class USBManager {
 
     public void onUsbPermissionResult(UsbDevice device, boolean granted) {
         if (device == null) {
-            ConnectionManager.instance().failed("USB permission result did not include a device");
+            ConnectionManager.instance().failed(ctx_.getString(R.string.connection_usb_permission_device_error));
             return;
         }
         if (!granted) {
-            ConnectionManager.instance().failed("USB permission was denied");
+            ConnectionManager.instance().failed(ctx_.getString(R.string.connection_usb_permission_denied));
             return;
         }
         handleUsbAttached(device);
@@ -130,7 +131,7 @@ public class USBManager {
         if (device == null || lastDevice_ == null || device.getDeviceId() == lastDevice_.getDeviceId()) {
             usbDevice_ = null;
             lastDevice_ = null;
-            ConnectionManager.instance().detached("modeUSB", "USB device disconnected");
+            ConnectionManager.instance().detached("modeUSB", ctx_.getString(R.string.connection_usb_disconnected));
             localBroadcastManager_.sendBroadcast(new Intent(DETACH_AOAP_DEVICE));
         }
     }
@@ -155,7 +156,7 @@ public class USBManager {
             if (checkAOAPDevice(device) && usbManager_.hasPermission(device)) {
                 lastDevice_ = device;
                 usbDevice_ = libUsb_.createDevice(device, usbManager_);
-                ConnectionManager.instance().transportAvailable("modeUSB", "USB connection recovered. Press Start.");
+                ConnectionManager.instance().transportAvailable("modeUSB", ctx_.getString(R.string.connection_usb_recovered));
                 localBroadcastManager_.sendBroadcast(new Intent(ATTACH_AOAP_DEVICE));
                 return true;
             }

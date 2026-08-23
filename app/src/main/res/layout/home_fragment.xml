@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/homeRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/oda_surface"
+    android:background="@color/home_light_surface"
     android:padding="24dp">
 
     <LinearLayout
@@ -26,18 +27,20 @@
             android:orientation="vertical">
 
             <TextView
+                android:id="@+id/homeTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/app_name"
-                android:textColor="@color/oda_text_primary"
+                android:textColor="@color/home_light_text_primary"
                 android:textSize="26sp"
                 android:textStyle="bold" />
 
             <TextView
+                android:id="@+id/homeSubtitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/home_subtitle"
-                android:textColor="@color/oda_text_secondary"
+                android:textColor="@color/home_light_text_secondary"
                 android:textSize="14sp" />
         </LinearLayout>
 
@@ -45,13 +48,13 @@
             android:id="@+id/statusBadge"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:background="@drawable/status_badge_idle"
+            android:background="@drawable/status_badge_idle_light"
             android:paddingLeft="14dp"
             android:paddingTop="8dp"
             android:paddingRight="14dp"
             android:paddingBottom="8dp"
             android:text="@string/home_status_waiting"
-            android:textColor="@color/oda_text_primary"
+            android:textColor="@color/home_light_text_primary"
             android:textSize="14sp"
             android:textStyle="bold" />
     </LinearLayout>
@@ -63,7 +66,7 @@
         android:layout_centerInParent="true"
         android:layout_marginLeft="72dp"
         android:layout_marginRight="72dp"
-        android:background="@drawable/panel_surface"
+        android:background="@drawable/panel_surface_light"
         android:gravity="center"
         android:orientation="vertical"
         android:padding="26dp">
@@ -82,7 +85,7 @@
             android:layout_marginTop="12dp"
             android:gravity="center"
             android:text="@string/home_waiting_title"
-            android:textColor="@color/oda_text_primary"
+            android:textColor="@color/home_light_text_primary"
             android:textSize="24sp"
             android:textStyle="bold" />
 
@@ -93,7 +96,7 @@
             android:layout_marginTop="6dp"
             android:gravity="center"
             android:text="@string/home_waiting_detail"
-            android:textColor="@color/oda_text_secondary"
+            android:textColor="@color/home_light_text_secondary"
             android:textSize="16sp" />
 
         <LinearLayout
@@ -106,13 +109,13 @@
                 android:id="@+id/usbStatus"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:background="@drawable/status_badge_idle"
+                android:background="@drawable/status_badge_idle_light"
                 android:paddingLeft="12dp"
                 android:paddingTop="7dp"
                 android:paddingRight="12dp"
                 android:paddingBottom="7dp"
                 android:text="@string/home_usb_waiting"
-                android:textColor="@color/oda_text_secondary"
+                android:textColor="@color/home_light_text_secondary"
                 android:textSize="14sp" />
 
             <TextView
@@ -120,13 +123,13 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginLeft="10dp"
-                android:background="@drawable/status_badge_idle"
+                android:background="@drawable/status_badge_idle_light"
                 android:paddingLeft="12dp"
                 android:paddingTop="7dp"
                 android:paddingRight="12dp"
                 android:paddingBottom="7dp"
                 android:text="@string/home_wifi_off"
-                android:textColor="@color/oda_text_secondary"
+                android:textColor="@color/home_light_text_secondary"
                 android:textSize="14sp" />
         </LinearLayout>
 
@@ -144,6 +147,7 @@
     </LinearLayout>
 
     <LinearLayout
+        android:id="@+id/homeActions"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
@@ -154,19 +158,29 @@
             android:id="@+id/settingsBtn"
             android:layout_width="160dp"
             android:layout_height="52dp"
-            android:background="@drawable/button_secondary"
+            android:background="@drawable/button_secondary_light"
             android:text="@string/settings"
-            android:textColor="@color/oda_text_primary"
+            android:textColor="@color/home_light_text_primary"
             android:textSize="16sp" />
+
+        <Button
+            android:id="@+id/themeBtn"
+            android:layout_width="168dp"
+            android:layout_height="52dp"
+            android:layout_marginLeft="12dp"
+            android:background="@drawable/button_secondary_light"
+            android:text="@string/theme_light"
+            android:textColor="@color/home_light_text_primary"
+            android:textSize="14sp" />
 
         <Button
             android:id="@+id/exitBtn"
             android:layout_width="160dp"
             android:layout_height="52dp"
             android:layout_marginLeft="12dp"
-            android:background="@drawable/button_secondary"
+            android:background="@drawable/button_secondary_light"
             android:text="@string/exit"
-            android:textColor="@color/oda_text_primary"
+            android:textColor="@color/home_light_text_primary"
             android:textSize="16sp" />
     </LinearLayout>
 </RelativeLayout>

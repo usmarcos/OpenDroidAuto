@@ -14,6 +14,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import androidx.annotation.Keep;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
+import it.smg.hu.R;
 import it.smg.hu.config.Settings;
 import it.smg.hu.manager.HondaConnectManager;
 import it.smg.hu.manager.ConnectionManager;
@@ -83,7 +84,7 @@ public class ODAService extends Service implements IAndroidAutoEntityEventHandle
         }
         currentMode_ = MODE_USB;
         stopRequested_ = false;
-        ConnectionManager.instance().connecting(MODE_USB, "Connecting through USB");
+        ConnectionManager.instance().connecting(MODE_USB, getString(R.string.connection_usb_connecting));
         startThread_ = new Thread(() -> {
             try {
                 startUsbInternal(surfaceView, keyHolder);
@@ -101,7 +102,7 @@ public class ODAService extends Service implements IAndroidAutoEntityEventHandle
         }
         currentMode_ = MODE_WIFI;
         stopRequested_ = false;
-        ConnectionManager.instance().connecting(MODE_WIFI, "Connecting through phone hotspot");
+        ConnectionManager.instance().connecting(MODE_WIFI, getString(R.string.connection_wifi_connecting));
         startThread_ = new Thread(() -> {
             try {
                 startWifiInternal(surfaceView, keyHolder);
@@ -116,7 +117,7 @@ public class ODAService extends Service implements IAndroidAutoEntityEventHandle
     private void startUsbInternal(SurfaceView surfaceView, InputDevice.OnKeyHolder keyHolder) {
         LibUsbDevice device = usbManager_.aoapDevice();
         if (device == null) {
-            ConnectionManager.instance().failed("USB accessory unavailable. Reconnect the cable.");
+            ConnectionManager.instance().failed(getString(R.string.connection_usb_unavailable));
             return;
         }
         try {
@@ -134,7 +135,7 @@ public class ODAService extends Service implements IAndroidAutoEntityEventHandle
                 return;
             }
             isRunning_ = true;
-            ConnectionManager.instance().active("Android Auto connected through USB");
+            ConnectionManager.instance().active(getString(R.string.connection_usb_active));
         } catch (Exception e) {
             Log.e(TAG, "USB startup error", e);
             onAndroidAutoQuitOnError("USB GENERIC ERROR", -1);
@@ -144,7 +145,7 @@ public class ODAService extends Service implements IAndroidAutoEntityEventHandle
     private void startWifiInternal(SurfaceView surfaceView, InputDevice.OnKeyHolder keyHolder) {
         String ipAddress = wifiManager_.getIpAddress();
         if (ipAddress == null) {
-            ConnectionManager.instance().failed("Phone hotspot gateway is not ready");
+            ConnectionManager.instance().failed(getString(R.string.connection_wifi_gateway_error));
             return;
         }
         try {
@@ -159,10 +160,10 @@ public class ODAService extends Service implements IAndroidAutoEntityEventHandle
                 return;
             }
             isRunning_ = true;
-            ConnectionManager.instance().active("Android Auto connected through Wi-Fi");
+            ConnectionManager.instance().active(getString(R.string.connection_wifi_active));
         } catch (TCPConnectException e) {
             Log.e(TAG, "TCP connection error", e);
-            ConnectionManager.instance().failed("Wi-Fi endpoint unreachable at " + ipAddress + ":5277");
+            ConnectionManager.instance().failed(getString(R.string.connection_wifi_endpoint_error, ipAddress));
             stop();
         }
     }
@@ -246,7 +247,7 @@ public class ODAService extends Service implements IAndroidAutoEntityEventHandle
     @Keep
     @Override
     public void onAndroidAutoQuit() {
-        ConnectionManager.instance().detached(currentMode_, "Android Auto session ended");
+        ConnectionManager.instance().detached(currentMode_, getString(R.string.connection_session_ended));
         stop();
     }
 
@@ -254,7 +255,9 @@ public class ODAService extends Service implements IAndroidAutoEntityEventHandle
     @Override
     public void onAndroidAutoQuitOnError(String error, int nativeErrorCode){
         Log.e(TAG, "closing with error " + error + "(" + nativeErrorCode + ")");
-        final String details = nativeErrorCode == -1 ? error : error + " (code " + nativeErrorCode + ")";
+        final String details = nativeErrorCode == -1
+                ? getString(R.string.connection_native_error, error)
+                : getString(R.string.connection_native_error_code, error, nativeErrorCode);
         ConnectionManager.instance().failed(details);
 
         mainHandler_.post(() -> {

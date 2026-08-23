@@ -25,8 +25,12 @@ import it.smg.hu.service.ODAService;
 import it.smg.hu.ui.MainActivity;
 import it.smg.hu.ui.SettingsActivity;
 
-/** The stationary connection dashboard. The normal USB flow never requires a Start button. */
+/** The stationary connection dashboard. Starting a session always remains a deliberate action. */
 public class HomeFragment extends Fragment {
+    private View root_;
+    private View statusPanel_;
+    private TextView homeTitle_;
+    private TextView homeSubtitle_;
     private TextView statusBadge_;
     private TextView statusTitle_;
     private TextView statusDetail_;
@@ -34,10 +38,14 @@ public class HomeFragment extends Fragment {
     private TextView wifiStatus_;
     private ImageView indicator_;
     private Button retryButton_;
+    private Button settingsButton_;
+    private Button themeButton_;
+    private Button exitButton_;
     private USBManager usbManager_;
     private WIFIManager wifiManager_;
     private LocalBroadcastManager broadcasts_;
     private ConnectionState renderedState_;
+    private boolean darkTheme_;
 
     private final BroadcastReceiver receiver_ = new BroadcastReceiver() {
         @Override
@@ -68,6 +76,10 @@ public class HomeFragment extends Fragment {
         wifiManager_ = WIFIManager.instance();
         broadcasts_ = LocalBroadcastManager.getInstance(requireContext());
 
+        root_ = view.findViewById(R.id.homeRoot);
+        statusPanel_ = view.findViewById(R.id.statusPanel);
+        homeTitle_ = view.findViewById(R.id.homeTitle);
+        homeSubtitle_ = view.findViewById(R.id.homeSubtitle);
         statusBadge_ = view.findViewById(R.id.statusBadge);
         statusTitle_ = view.findViewById(R.id.statusTitle);
         statusDetail_ = view.findViewById(R.id.statusDetail);
@@ -75,12 +87,17 @@ public class HomeFragment extends Fragment {
         wifiStatus_ = view.findViewById(R.id.wifiStatus);
         indicator_ = view.findViewById(R.id.connectionIndicator);
         retryButton_ = view.findViewById(R.id.retryBtn);
+        settingsButton_ = view.findViewById(R.id.settingsBtn);
+        themeButton_ = view.findViewById(R.id.themeBtn);
+        exitButton_ = view.findViewById(R.id.exitBtn);
 
-        view.findViewById(R.id.settingsBtn).setOnClickListener(v ->
+        settingsButton_.setOnClickListener(v ->
                 startActivityForResult(new Intent(getContext(), SettingsActivity.class), MainActivity.SETTINGS_ACTIVITY_REQUEST));
-        view.findViewById(R.id.exitBtn).setOnClickListener(v -> ((MainActivity) requireActivity()).exitSession());
+        themeButton_.setOnClickListener(v -> toggleTheme());
+        exitButton_.setOnClickListener(v -> ((MainActivity) requireActivity()).exitSession());
         retryButton_.setOnClickListener(v -> retryConnection());
 
+        applyTheme();
         renderWifiAvailability();
         renderState(ConnectionManager.instance().state(), ConnectionManager.instance().lastMessage(),
                 ConnectionManager.instance().mode());
@@ -109,6 +126,7 @@ public class HomeFragment extends Fragment {
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == MainActivity.SETTINGS_ACTIVITY_REQUEST) {
+            applyTheme();
             renderWifiAvailability();
             if (wifiManager_ != null) {
                 wifiManager_.checkNetwork();
@@ -137,6 +155,43 @@ public class HomeFragment extends Fragment {
         }
     }
 
+    private void toggleTheme() {
+        Settings.instance().appearance.darkTheme(!Settings.instance().appearance.darkTheme());
+        applyTheme();
+        renderState(ConnectionManager.instance().state(), ConnectionManager.instance().lastMessage(),
+                ConnectionManager.instance().mode());
+    }
+
+    private void applyTheme() {
+        darkTheme_ = Settings.instance().appearance.darkTheme();
+        int surfaceColor = darkTheme_ ? R.color.oda_surface : R.color.home_light_surface;
+        int primaryColor = darkTheme_ ? R.color.oda_text_primary : R.color.home_light_text_primary;
+        int secondaryColor = darkTheme_ ? R.color.oda_text_secondary : R.color.home_light_text_secondary;
+        int secondaryButton = darkTheme_ ? R.drawable.button_secondary : R.drawable.button_secondary_light;
+
+        root_.setBackgroundColor(getResources().getColor(surfaceColor));
+        statusPanel_.setBackgroundResource(darkTheme_ ? R.drawable.panel_surface : R.drawable.panel_surface_light);
+        homeTitle_.setTextColor(getResources().getColor(primaryColor));
+        homeSubtitle_.setTextColor(getResources().getColor(secondaryColor));
+        statusTitle_.setTextColor(getResources().getColor(primaryColor));
+        statusDetail_.setTextColor(getResources().getColor(secondaryColor));
+        usbStatus_.setTextColor(getResources().getColor(secondaryColor));
+        wifiStatus_.setTextColor(getResources().getColor(secondaryColor));
+        usbStatus_.setBackgroundResource(darkTheme_ ? R.drawable.status_badge_idle : R.drawable.status_badge_idle_light);
+        wifiStatus_.setBackgroundResource(darkTheme_ ? R.drawable.status_badge_idle : R.drawable.status_badge_idle_light);
+
+        styleSecondaryButton(settingsButton_, secondaryButton, primaryColor);
+        styleSecondaryButton(themeButton_, secondaryButton, primaryColor);
+        styleSecondaryButton(exitButton_, secondaryButton, primaryColor);
+        themeButton_.setText(darkTheme_ ? R.string.theme_dark : R.string.theme_light);
+        themeButton_.setSelected(darkTheme_);
+    }
+
+    private void styleSecondaryButton(Button button, int background, int textColor) {
+        button.setBackgroundResource(background);
+        button.setTextColor(getResources().getColor(textColor));
+    }
+
     private void renderState(ConnectionState state, String message, String mode) {
         renderedState_ = state;
         boolean manualStartAvailable = state != ConnectionState.ERROR && mode != null
@@ -145,7 +200,8 @@ public class HomeFragment extends Fragment {
         retryButton_.setText(state == ConnectionState.ERROR && ODAService.MODE_USB.equals(mode)
                 ? R.string.home_recover_usb : (state == ConnectionState.ERROR ? R.string.home_retry : R.string.home_start));
         String detail = state == ConnectionState.ERROR ? message : null;
-        int badge = R.drawable.status_badge_idle;
+        int badge = darkTheme_ ? R.drawable.status_badge_idle : R.drawable.status_badge_idle_light;
+        int badgeTextColor = darkTheme_ ? R.color.oda_text_primary : R.color.home_light_text_primary;
         int icon = ODAService.MODE_WIFI.equals(mode) ? R.drawable.wifi_dis : R.drawable.usb_dis;
 
         switch (state) {
@@ -166,6 +222,7 @@ public class HomeFragment extends Fragment {
                 break;
             case ACTIVE:
                 badge = R.drawable.status_badge_active;
+                badgeTextColor = R.color.oda_text_primary;
                 icon = ODAService.MODE_WIFI.equals(mode) ? R.drawable.wifi : R.drawable.usb;
                 statusBadge_.setText(R.string.home_status_connected);
                 statusTitle_.setText(R.string.home_connected_title);
@@ -178,6 +235,7 @@ public class HomeFragment extends Fragment {
                 break;
             case ERROR:
                 badge = R.drawable.status_badge_error;
+                badgeTextColor = R.color.oda_text_primary;
                 statusBadge_.setText(R.string.home_status_error);
                 statusTitle_.setText(R.string.home_error_title);
                 detail = fallback(detail, R.string.home_error_detail);
@@ -190,6 +248,7 @@ public class HomeFragment extends Fragment {
                 break;
         }
         statusBadge_.setBackgroundResource(badge);
+        statusBadge_.setTextColor(getResources().getColor(badgeTextColor));
         indicator_.setImageResource(icon);
         statusDetail_.setText(detail);
         if (ODAService.MODE_USB.equals(mode) && usbManager_ != null && usbManager_.aoapDevice() != null) {

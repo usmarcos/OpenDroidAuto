@@ -231,7 +231,7 @@ public class PlayerActivity extends Activity implements ServiceConnection, Surfa
         }
 
         if (startMode_ == null) {
-            ConnectionManager.instance().failed("No connection mode was provided");
+            ConnectionManager.instance().failed(getString(R.string.connection_mode_missing));
             finish();
             return;
         }
@@ -283,7 +283,7 @@ public class PlayerActivity extends Activity implements ServiceConnection, Surfa
     }
 
     private void exitSession() {
-        ConnectionManager.instance().userExited("Android Auto stopped. Reconnect the cable to start again.");
+        ConnectionManager.instance().userExited(getString(R.string.connection_user_stopped));
         if (odaService_ != null) {
             odaService_.stop();
         } else {

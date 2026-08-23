@@ -145,7 +145,7 @@ public class MainActivity extends FragmentActivity {
     /** Called by the home screen and PlayerActivity to prevent a reconnect loop. */
     public void exitSession() {
         playerLaunchPending_ = false;
-        ConnectionManager.instance().userExited("Android Auto stopped. Reconnect the cable to start again.");
+        ConnectionManager.instance().userExited(getString(R.string.connection_user_stopped));
         stopService(new Intent(this, ODAService.class));
     }
 

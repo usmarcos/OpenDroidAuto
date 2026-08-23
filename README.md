@@ -8,6 +8,7 @@ Android Auto receiver for legacy Android ARM32 head units, including Honda Conne
 - If the USB stack becomes stale, use **RECOVER USB**. It closes the stale handle, rescans the bus and recreates the AOAP device without resetting the physical USB port.
 - Selecting **Exit** stops the session and keeps the dashboard open. The same cable can be used to press Start again.
 - Wi-Fi is optional. Enable it in settings only after the phone hotspot is already saved by Android on the head unit. The app uses the hotspot gateway on TCP port 5277 and reports failures for manual recovery.
+- The dashboard and Settings support a persistent light/dark selector. A fresh installation starts in light mode; Portuguese multimedia systems use Portuguese interface text and every other locale falls back to English.
 - Android controls USB permission. A non-rooted head unit can still show the system dialog on a first connection or after a device is disconnected; the app does not bypass that permission.
 
 ## Compatibility
@@ -22,6 +23,7 @@ Install JDK 17, Android SDK platform 34, and NDK `17.2.4988734`, then run:
 
 ```sh
 ./gradlew test
+./gradlew assembleDebugAndroidTest
 ./gradlew assembleRelease
 ```
 

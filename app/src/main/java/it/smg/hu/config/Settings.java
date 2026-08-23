@@ -27,6 +27,7 @@ public class Settings {
     public Video video;
     public Audio audio;
     public Connectivity connectivity;
+    public Appearance appearance;
 
     private static Settings settings = null;
 
@@ -44,6 +45,7 @@ public class Settings {
         car = new Car();
         keymap = new Keymap();
         connectivity = new Connectivity();
+        appearance = new Appearance();
         advanced = new Advanced();
         video = new Video();
         audio = new Audio();
@@ -602,6 +604,19 @@ public class Settings {
 
         public void steeringWheelIdx(int idx){
             SP.edit().putInt(ADVANCED_SW_IDX, idx).apply();
+        }
+    }
+
+    public class Appearance extends Base {
+        public static final String DARK_THEME = "darkTheme";
+        public static final boolean DARK_THEME_DEFAULT_VALUE = false;
+
+        public boolean darkTheme() {
+            return get(DARK_THEME, DARK_THEME_DEFAULT_VALUE);
+        }
+
+        public void darkTheme(boolean enabled) {
+            set(DARK_THEME, enabled);
         }
     }
 

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/settingsRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/settings_surface">
@@ -9,7 +10,7 @@
         android:layout_width="match_parent"
         android:layout_height="68dp"
         android:layout_alignParentTop="true"
-        android:background="@color/oda_surface"
+        android:background="@color/home_light_surface_elevated"
         android:gravity="center_vertical"
         android:orientation="horizontal"
         android:paddingLeft="16dp"
@@ -19,9 +20,9 @@
             android:id="@+id/settingsBackBtn"
             android:layout_width="92dp"
             android:layout_height="48dp"
-            android:background="@drawable/button_secondary"
+            android:background="@drawable/button_secondary_light"
             android:text="@string/settings_back"
-            android:textColor="@color/oda_text_primary"
+            android:textColor="@color/home_light_text_primary"
             android:textSize="14sp" />
 
         <LinearLayout
@@ -36,17 +37,27 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/car_settings"
-                android:textColor="@color/oda_text_primary"
+                android:textColor="@color/home_light_text_primary"
                 android:textSize="24sp"
                 android:textStyle="bold" />
 
             <TextView
+                android:id="@+id/settingsSubtitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/settings_subtitle"
-                android:textColor="@color/oda_text_secondary"
+                android:textColor="@color/home_light_text_secondary"
                 android:textSize="14sp" />
         </LinearLayout>
+
+        <Button
+            android:id="@+id/settingsThemeBtn"
+            android:layout_width="132dp"
+            android:layout_height="48dp"
+            android:background="@drawable/button_secondary_light"
+            android:text="@string/theme_light"
+            android:textColor="@color/home_light_text_primary"
+            android:textSize="13sp" />
     </LinearLayout>
 
     <ScrollView
@@ -73,7 +84,7 @@
         android:layout_width="match_parent"
         android:layout_height="72dp"
         android:layout_alignParentBottom="true"
-        android:background="@color/oda_surface_elevated"
+        android:background="@color/home_light_surface_elevated"
         android:gravity="center"
         android:orientation="horizontal"
         android:paddingLeft="12dp"
@@ -83,7 +94,7 @@
             android:id="@+id/car_settings"
             android:layout_width="116dp"
             android:layout_height="56dp"
-            android:background="@drawable/button_secondary"
+            android:background="@drawable/button_secondary_light"
             android:contentDescription="@string/car_settings"
             android:padding="8dp"
             android:scaleType="centerInside"
@@ -94,7 +105,7 @@
             android:layout_width="116dp"
             android:layout_height="56dp"
             android:layout_marginLeft="8dp"
-            android:background="@drawable/button_secondary"
+            android:background="@drawable/button_secondary_light"
             android:contentDescription="@string/video_settings"
             android:padding="8dp"
             android:scaleType="centerInside"
@@ -105,7 +116,7 @@
             android:layout_width="116dp"
             android:layout_height="56dp"
             android:layout_marginLeft="8dp"
-            android:background="@drawable/button_secondary"
+            android:background="@drawable/button_secondary_light"
             android:contentDescription="@string/conn_settings"
             android:padding="8dp"
             android:scaleType="centerInside"
@@ -116,7 +127,7 @@
             android:layout_width="116dp"
             android:layout_height="56dp"
             android:layout_marginLeft="8dp"
-            android:background="@drawable/button_secondary"
+            android:background="@drawable/button_secondary_light"
             android:contentDescription="@string/keymap_settings"
             android:padding="8dp"
             android:scaleType="centerInside"
@@ -127,7 +138,7 @@
             android:layout_width="116dp"
             android:layout_height="56dp"
             android:layout_marginLeft="8dp"
-            android:background="@drawable/button_secondary"
+            android:background="@drawable/button_secondary_light"
             android:contentDescription="@string/advanced_settings"
             android:padding="8dp"
             android:scaleType="centerInside"

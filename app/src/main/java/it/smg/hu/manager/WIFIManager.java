@@ -12,6 +12,7 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
+import it.smg.hu.R;
 import it.smg.libs.common.Log;
 import it.smg.hu.config.Settings;
 
@@ -92,13 +93,14 @@ public class WIFIManager {
                 ipAddress_ = ipAddress();
                 networkSSID_ = networkSSID();
                 if (ipAddress_ == null) {
-                    ConnectionManager.instance().failed("Phone hotspot has no gateway yet");
+                    ConnectionManager.instance().failed(ctx_.getString(R.string.connection_hotspot_gateway_error));
                     return;
                 }
                 if (Log.isDebug()) Log.d(TAG, "Network with ip: " + ipAddress_);
                 if (Log.isDebug()) Log.d(TAG, "Network with SSID: " + networkSSID_);
 
-                ConnectionManager.instance().transportAvailable("modeWifi", "Phone hotspot ready: " + networkSSID_);
+                ConnectionManager.instance().transportAvailable("modeWifi",
+                        ctx_.getString(R.string.connection_hotspot_ready, networkSSID_));
                 Intent connectWifiIntent = new Intent(CONNECT_WIFI);
                 connectWifiIntent.putExtra(EXTRA_SSID, networkSSID_);
                 localBroadcastManager_.sendBroadcast(connectWifiIntent);
@@ -115,7 +117,7 @@ public class WIFIManager {
 
             Intent disconnectWifiIntent = new Intent(DISCONNECT_WIFI);
             localBroadcastManager_.sendBroadcast(disconnectWifiIntent);
-            ConnectionManager.instance().detached("modeWifi", "Phone hotspot disconnected");
+            ConnectionManager.instance().detached("modeWifi", ctx_.getString(R.string.connection_hotspot_disconnected));
         }
     }
 }

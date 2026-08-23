@@ -28,32 +28,35 @@ public abstract class BaseSettingsFragment extends Fragment {
     @Override
     public void onViewCreated(View view, android.os.Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        view.setBackgroundColor(getResources().getColor(R.color.settings_surface));
-        styleControls(view);
+        boolean dark = Settings.instance().appearance.darkTheme();
+        view.setBackgroundColor(getResources().getColor(dark ? R.color.oda_surface : R.color.settings_surface));
+        styleControls(view, dark);
     }
 
-    private void styleControls(View view) {
+    private void styleControls(View view, boolean dark) {
         if (view instanceof ViewGroup && !(view instanceof Spinner)) {
             ViewGroup group = (ViewGroup) view;
             for (int i = 0; i < group.getChildCount(); i++) {
-                styleControls(group.getChildAt(i));
+                styleControls(group.getChildAt(i), dark);
             }
             return;
         }
+        int primaryColor = dark ? R.color.oda_text_primary : R.color.settings_text_primary;
+        int secondaryColor = dark ? R.color.oda_text_secondary : R.color.settings_text_secondary;
         if (view instanceof EditText) {
             EditText field = (EditText) view;
-            field.setTextColor(getResources().getColor(R.color.settings_text_primary));
-            field.setHintTextColor(getResources().getColor(R.color.settings_text_secondary));
-            field.setBackgroundResource(R.drawable.settings_input_light);
+            field.setTextColor(getResources().getColor(primaryColor));
+            field.setHintTextColor(getResources().getColor(secondaryColor));
+            field.setBackgroundResource(dark ? R.drawable.settings_input_dark : R.drawable.settings_input_light);
             field.setMinHeight(dp(48));
         } else if (view instanceof CheckBox) {
-            ((CheckBox) view).setTextColor(getResources().getColor(R.color.settings_text_primary));
+            ((CheckBox) view).setTextColor(getResources().getColor(primaryColor));
             view.setMinimumHeight(dp(48));
         } else if (view instanceof Spinner) {
-            view.setBackgroundResource(R.drawable.settings_spinner_light);
+            view.setBackgroundResource(dark ? R.drawable.settings_spinner_dark : R.drawable.settings_spinner_light);
             view.setMinimumHeight(dp(48));
         } else if (view instanceof TextView) {
-            ((TextView) view).setTextColor(getResources().getColor(R.color.settings_text_primary));
+            ((TextView) view).setTextColor(getResources().getColor(primaryColor));
         }
     }
 
@@ -141,8 +144,7 @@ public abstract class BaseSettingsFragment extends Fragment {
     }
 
     protected void initSpinner(Spinner spinner, int data, int dataValue, Settings.Base base, String settingsKey, int defaultValue, Callable<Void> custonCheck){
-        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(getContext(), data, R.layout.spinner_item);
-        adapter.setDropDownViewResource(R.layout.spinner_dropdown_item);
+        ArrayAdapter<CharSequence> adapter = createSpinnerAdapter(data);
         spinner.setAdapter(adapter);
 
         int value = base.get(settingsKey, defaultValue);
@@ -184,8 +186,7 @@ public abstract class BaseSettingsFragment extends Fragment {
     }
 
     protected void initSpinner(Spinner spinner, int data, int dataValue, Settings.Base base, String settingsKey, String defaultValue, Callable<Void> custonCheck){
-        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(getContext(), data, R.layout.spinner_item);
-        adapter.setDropDownViewResource(R.layout.spinner_dropdown_item);
+        ArrayAdapter<CharSequence> adapter = createSpinnerAdapter(data);
         spinner.setAdapter(adapter);
 
         String value = base.get(settingsKey, defaultValue);
@@ -224,5 +225,14 @@ public abstract class BaseSettingsFragment extends Fragment {
                 }
             }
         });
+    }
+
+    private ArrayAdapter<CharSequence> createSpinnerAdapter(int data) {
+        boolean dark = Settings.instance().appearance.darkTheme();
+        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(getContext(), data,
+                dark ? R.layout.spinner_item_dark : R.layout.spinner_item);
+        adapter.setDropDownViewResource(dark
+                ? R.layout.spinner_dropdown_item_dark : R.layout.spinner_dropdown_item);
+        return adapter;
     }
 }

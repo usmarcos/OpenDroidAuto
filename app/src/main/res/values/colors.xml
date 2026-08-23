@@ -24,4 +24,9 @@
     <color name="settings_outline">#A9B6C5</color>
     <color name="settings_text_primary">#17212B</color>
     <color name="settings_text_secondary">#526476</color>
+    <color name="home_light_surface">#E9EFF5</color>
+    <color name="home_light_surface_elevated">#FFFFFF</color>
+    <color name="home_light_outline">#B4C0CD</color>
+    <color name="home_light_text_primary">#17212B</color>
+    <color name="home_light_text_secondary">#526476</color>
 </resources>

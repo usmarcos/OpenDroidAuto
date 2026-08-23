@@ -27,7 +27,7 @@ jobs:
       - name: Build and test
         run: |
           chmod +x gradlew
-          ./gradlew test :common:build assembleRelease
+          ./gradlew test :common:build assembleDebugAndroidTest assembleRelease
       - name: Upload release APK
         uses: actions/upload-artifact@v4
         with:
