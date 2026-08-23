@@ -22,6 +22,7 @@ public final class ConnectionManager {
     private final LocalBroadcastManager broadcastManager_;
     private final Handler handler_ = new Handler(Looper.getMainLooper());
     private Runnable pendingRetry_;
+    private String lastMessage_;
 
     private ConnectionManager(Context context) {
         broadcastManager_ = LocalBroadcastManager.getInstance(context.getApplicationContext());
@@ -47,6 +48,27 @@ public final class ConnectionManager {
 
     public boolean isAutoStartAllowed() {
         return policy_.isAutoStartAllowed();
+    }
+
+    public boolean isManualStartAllowed() {
+        return policy_.isManualStartAllowed();
+    }
+
+    public boolean isAutoStartEnabled() {
+        return policy_.isAutoStartEnabled();
+    }
+
+    public String lastMessage() {
+        return lastMessage_;
+    }
+
+    public void setAutoStartEnabled(boolean enabled) {
+        if (policy_.isAutoStartEnabled() == enabled) {
+            return;
+        }
+        policy_.setAutoStartEnabled(enabled);
+        cancelRetry();
+        publish(enabled ? "Automatic Android Auto start enabled" : "Automatic Android Auto start disabled");
     }
 
     public void transportAvailable(String mode, String message) {
@@ -115,7 +137,7 @@ public final class ConnectionManager {
     }
 
     public void retryNow() {
-        if (policy_.mode() == null || !policy_.isAutoStartAllowed()) {
+        if (policy_.mode() == null || !policy_.isManualStartAllowed()) {
             return;
         }
         cancelRetry();
@@ -128,6 +150,7 @@ public final class ConnectionManager {
     }
 
     private void publish(String message) {
+        lastMessage_ = message;
         Intent intent = new Intent(ACTION_STATE_CHANGED);
         intent.putExtra(EXTRA_STATE, policy_.state().name());
         intent.putExtra(EXTRA_MODE, policy_.mode());

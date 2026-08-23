@@ -25,7 +25,7 @@ The interface is used in a landscape car display, often at 800x480, while the ve
 ## Capabilities and Constraints
 
 - Keep Android 4.x, `armeabi-v7a`, target SDK 15, and NDK 17.2 compatibility.
-- USB auto-start is the normal flow after Android grants device access; Android system permissions cannot be bypassed without privileged installation.
+- USB auto-start is user-controlled from the dashboard and remains available after Android grants device access; Android system permissions cannot be bypassed without privileged installation.
 - Wi-Fi uses a hotspot already saved by the Android system; Wi-Fi Direct and in-app password provisioning are out of scope.
 - Honda integration stays available when compatible and must not crash generic devices.
 

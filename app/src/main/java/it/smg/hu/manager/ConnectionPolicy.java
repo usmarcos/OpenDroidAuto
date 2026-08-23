@@ -8,6 +8,7 @@ public final class ConnectionPolicy {
     private String mode;
     private int retryCount;
     private boolean autoStartSuppressed;
+    private boolean autoStartEnabled;
 
     public ConnectionState state() {
         return state;
@@ -22,7 +23,19 @@ public final class ConnectionPolicy {
     }
 
     public boolean isAutoStartAllowed() {
+        return autoStartEnabled && !autoStartSuppressed;
+    }
+
+    public boolean isManualStartAllowed() {
         return !autoStartSuppressed;
+    }
+
+    public boolean isAutoStartEnabled() {
+        return autoStartEnabled;
+    }
+
+    public void setAutoStartEnabled(boolean enabled) {
+        autoStartEnabled = enabled;
     }
 
     public void transportAvailable(String connectionMode) {
@@ -56,7 +69,7 @@ public final class ConnectionPolicy {
     }
 
     public void manualRetry() {
-        if (!autoStartSuppressed) {
+        if (isManualStartAllowed()) {
             retryCount = 0;
             state = ConnectionState.CONNECTING;
         }
@@ -76,7 +89,7 @@ public final class ConnectionPolicy {
 
     public boolean failed() {
         state = ConnectionState.ERROR;
-        if (autoStartSuppressed || mode == null || retryCount >= MAX_RETRIES) {
+        if (!autoStartEnabled || autoStartSuppressed || mode == null || retryCount >= MAX_RETRIES) {
             return false;
         }
         retryCount++;

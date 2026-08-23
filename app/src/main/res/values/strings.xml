@@ -8,6 +8,9 @@
 	<string name="home_usb_waiting">USB waiting</string>
 	<string name="home_wifi_off">Wi-Fi off</string>
 	<string name="home_retry">TRY AGAIN</string>
+	<string name="home_start">START ANDROID AUTO</string>
+	<string name="home_auto_start_on">AUTO-START: ON</string>
+	<string name="home_auto_start_off">AUTO-START: OFF</string>
 	<string name="home_status_permission">PERMISSION</string>
 	<string name="home_status_connecting">CONNECTING</string>
 	<string name="home_status_connected">CONNECTED</string>

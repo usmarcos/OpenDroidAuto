@@ -10,6 +10,7 @@ public class ConnectionPolicyTest {
     @Test
     public void retriesAreBoundedAndKeepTheConnectionMode() {
         ConnectionPolicy policy = new ConnectionPolicy();
+        policy.setAutoStartEnabled(true);
         policy.transportAvailable("modeUSB");
 
         assertTrue(policy.failed());
@@ -23,6 +24,7 @@ public class ConnectionPolicyTest {
     @Test
     public void userExitSuppressesRetriesUntilDetach() {
         ConnectionPolicy policy = new ConnectionPolicy();
+        policy.setAutoStartEnabled(true);
         policy.transportAvailable("modeUSB");
         policy.userExited();
 
@@ -32,5 +34,14 @@ public class ConnectionPolicyTest {
         policy.detached();
         assertTrue(policy.isAutoStartAllowed());
         assertEquals(ConnectionState.IDLE, policy.state());
+    }
+
+    @Test
+    public void manualModeDoesNotScheduleAutomaticRetries() {
+        ConnectionPolicy policy = new ConnectionPolicy();
+        policy.transportAvailable("modeUSB");
+
+        assertFalse(policy.failed());
+        assertEquals(ConnectionState.ERROR, policy.state());
     }
 }

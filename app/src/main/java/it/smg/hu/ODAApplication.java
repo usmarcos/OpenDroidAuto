@@ -55,6 +55,7 @@ public class ODAApplication extends MultiDexApplication {
 
         HondaPlatform.init(getApplicationContext());
         ConnectionManager.init(getApplicationContext());
+        ConnectionManager.instance().setAutoStartEnabled(Settings.instance().advanced.autoStartEnabled());
         USBManager.init(getApplicationContext());
         WIFIManager.init(getApplicationContext());
         AppBadge.init(getApplicationContext());
