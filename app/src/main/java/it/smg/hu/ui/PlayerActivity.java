@@ -67,8 +67,9 @@ public class PlayerActivity extends Activity implements ServiceConnection, Surfa
 
         setContentView(R.layout.activity_player);
 
-        if (Settings.instance().advanced.hondaIntegrationEnabled()){
-            HondaConnectManager.instance().initialize();
+        HondaConnectManager hondaManager = hondaManager();
+        if (hondaManager != null){
+            hondaManager.initialize();
         }
 
         surfaceView_ = findViewById(R.id.surfaceView);
@@ -114,10 +115,17 @@ public class PlayerActivity extends Activity implements ServiceConnection, Surfa
 
         Intent odaServiceIntent = new Intent(this, ODAService.class);
         startService(odaServiceIntent);
-        bindService(odaServiceIntent, this, BIND_AUTO_CREATE | BIND_ABOVE_CLIENT | BIND_IMPORTANT);
+        // Track the binding from the moment it is accepted, not from
+        // onServiceConnected: an onPause arriving before the connection lands
+        // would otherwise skip unbindService and leak this ServiceConnection,
+        // and the next onResume would bind the same object a second time.
+        if (bindService(odaServiceIntent, this, BIND_AUTO_CREATE | BIND_ABOVE_CLIENT | BIND_IMPORTANT)) {
+            isServiceBound_ = true;
+        }
 
-        if (Settings.instance().advanced.hondaIntegrationEnabled()){
-            HondaConnectManager.instance().initAudioBinding();
+        HondaConnectManager hondaManager = hondaManager();
+        if (hondaManager != null){
+            hondaManager.initAudioBinding();
         }
 
         if (NotificationFactory.instance() != null) {
@@ -140,14 +148,25 @@ public class PlayerActivity extends Activity implements ServiceConnection, Surfa
         }
 
         if (isServiceBound_) {
-            unbindService(this);
+            isServiceBound_ = false;
+            try {
+                unbindService(this);
+            } catch (IllegalArgumentException e) {
+                Log.e(TAG, "service was not bound", e);
+            }
         }
 
-        if (Settings.instance().advanced.hondaIntegrationEnabled()){
-            HondaConnectManager.instance().sendToBackground();
+        HondaConnectManager hondaManager = hondaManager();
+        if (hondaManager != null){
+            hondaManager.sendToBackground();
         }
 
-        AppBadge.instance().show();
+        // AppBadge.init() is the last step of Application.onCreate, so anything
+        // that fails before it leaves this singleton null - the same cold-start
+        // hazard that used to crash onResume.
+        if (AppBadge.instance() != null) {
+            AppBadge.instance().show();
+        }
 
         if (localReceiver_ != null) {
             localBroadcastManager_.unregisterReceiver(localReceiver_);
@@ -228,14 +247,27 @@ public class PlayerActivity extends Activity implements ServiceConnection, Surfa
         }
     }
 
+    /**
+     * The Honda glue, or null when it is switched off or was never initialised.
+     * HondaConnectManager.init() only runs at boot when the setting was already
+     * enabled, so turning it on later leaves instance() null.
+     */
+    private HondaConnectManager hondaManager(){
+        if (!Settings.instance().advanced.hondaIntegrationEnabled()){
+            return null;
+        }
+        return HondaConnectManager.instance();
+    }
+
     private void start(){
 
-        if (Settings.instance().advanced.hondaIntegrationEnabled()){
-            HondaConnectManager.instance().adjustPermission();
+        HondaConnectManager hondaManager = hondaManager();
+        if (hondaManager != null){
+            hondaManager.adjustPermission();
         }
 
         if (startMode_ == null) {
-            ConnectionManager.instance().failed("No connection mode was provided");
+            ConnectionManager.instance().failed(getString(R.string.connection_mode_missing));
             finish();
             return;
         }
@@ -259,7 +291,9 @@ public class PlayerActivity extends Activity implements ServiceConnection, Surfa
     public void onServiceDisconnected(ComponentName name) {
         if (Log.isDebug()) Log.d(TAG, "onServiceDisconnected");
         odaService_ = null;
-        isServiceBound_ = false;
+        // isServiceBound_ stays true on purpose: the service process died but the
+        // binding is still registered, so onPause must still unbind it. Clearing
+        // the flag here leaked the ServiceConnection on every service crash.
     }
 
     @Override

@@ -120,9 +120,11 @@ public class AppBadge extends Notification{
     @Override
     public void show() {
         if (Settings.instance().video.showAppBadge()) {
-
-            Intent odaServiceIntent = new Intent(ctx_, AppBadge.class);
-            ctx_.startService(odaServiceIntent);
+            // No startService() here: this used to launch an Intent targeting
+            // AppBadge itself, which is not a Service and is not declared in the
+            // manifest, so every call only produced "Unable to start service
+            // it.smg.hu/<obfuscated AppBadge>: not found" in the log. The badge is
+            // a window overlay and needs no service of its own.
             super.show();
         }
     }

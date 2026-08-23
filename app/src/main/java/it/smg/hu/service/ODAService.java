@@ -10,9 +10,12 @@ import android.os.Looper;
 import android.view.SurfaceView;
 import android.widget.Toast;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import androidx.annotation.Keep;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
+import it.smg.hu.R;
 import it.smg.hu.config.Settings;
 import it.smg.hu.manager.HondaConnectManager;
 import it.smg.hu.manager.ConnectionManager;
@@ -44,7 +47,12 @@ public class ODAService extends Service implements IAndroidAutoEntityEventHandle
 
     private LocalBroadcastManager localBroadcastManager_;
     private NotificationFactory notificationFactory_;
-    private AndroidAutoEntity androidAutoEntity_;
+    /**
+     * Written by the connection thread and read by the UI thread and by native
+     * quit callbacks. It also gates whether a new session may start, so a stale
+     * read here would either skip a teardown or lock connecting out entirely.
+     */
+    private volatile AndroidAutoEntity androidAutoEntity_;
 
     private  USBManager usbManager_;
     private  WIFIManager wifiManager_;
@@ -56,6 +64,17 @@ public class ODAService extends Service implements IAndroidAutoEntityEventHandle
     private volatile boolean isRunning_;
     private volatile boolean stopRequested_;
     private String currentMode_;
+
+    /**
+     * Guards the session lifecycle. Tearing an AndroidAutoEntity down runs a
+     * cascade of native destructors while io_service handlers are still in
+     * flight; letting a new session start on top of that left two entities alive
+     * at once, which showed up as SEGV in the asio strand and as a wedged main
+     * thread. A flag rather than a lock on purpose: stop() is reached both from
+     * the UI thread and from native callbacks, so blocking one on the other could
+     * deadlock the very service that has to finish the teardown.
+     */
+    private final AtomicBoolean stopping_ = new AtomicBoolean(false);
 
     public ODAService() {}
 
@@ -75,12 +94,12 @@ public class ODAService extends Service implements IAndroidAutoEntityEventHandle
     }
 
     public void startUsb(SurfaceView surfaceView, InputDevice.OnKeyHolder keyHolder){
-        if (isRunning_) {
+        if (!canStartSession()) {
             return;
         }
         currentMode_ = MODE_USB;
         stopRequested_ = false;
-        ConnectionManager.instance().connecting(MODE_USB, "Connecting through USB");
+        ConnectionManager.instance().connecting(MODE_USB, getString(R.string.connection_usb_connecting));
         startThread_ = new Thread(() -> {
             Looper.prepare();
 
@@ -98,7 +117,7 @@ public class ODAService extends Service implements IAndroidAutoEntityEventHandle
                         }
                         androidAutoEntity_.start(this);
                         isRunning_ = true;
-                        ConnectionManager.instance().active("Android Auto is connected through USB");
+                        ConnectionManager.instance().active(getString(R.string.connection_usb_active));
                     } else {
                         Log.e(TAG, "Error in open usb device");
                         onAndroidAutoQuitOnError("USB OPEN DEVICE", -1);
@@ -111,7 +130,7 @@ public class ODAService extends Service implements IAndroidAutoEntityEventHandle
                     return;
                 }
             } else {
-                ConnectionManager.instance().failed("Android Auto USB accessory is no longer available");
+                ConnectionManager.instance().failed(getString(R.string.connection_usb_unavailable));
             }
             if (Log.isInfo()) Log.i(TAG, "start usb thead completed");
         });
@@ -119,17 +138,17 @@ public class ODAService extends Service implements IAndroidAutoEntityEventHandle
     }
 
     public void startWifi(SurfaceView surfaceView, InputDevice.OnKeyHolder keyHolder){
-        if (isRunning_) {
+        if (!canStartSession()) {
             return;
         }
         currentMode_ = MODE_WIFI;
         stopRequested_ = false;
-        ConnectionManager.instance().connecting(MODE_WIFI, "Connecting through phone hotspot");
+        ConnectionManager.instance().connecting(MODE_WIFI, getString(R.string.connection_wifi_connecting));
         startThread_ = new Thread(() -> {
             Looper.prepare();
 
+            String ipAddress = wifiManager_.getIpAddress();
             try {
-                String ipAddress = wifiManager_.getIpAddress();
                 if (ipAddress != null) {
 //                    if (Log.isInfo()) Log.i(TAG, "Connect to ip " + ipAddress);
                     TCPEndpoint tcpEndpoint = new TCPEndpoint(ipAddress);
@@ -141,14 +160,20 @@ public class ODAService extends Service implements IAndroidAutoEntityEventHandle
                     }
                     androidAutoEntity_.start(this);
                     isRunning_ = true;
-                    ConnectionManager.instance().active("Android Auto is connected through Wi-Fi");
+                    ConnectionManager.instance().active(getString(R.string.connection_wifi_active));
                 } else {
-                    ConnectionManager.instance().failed("Phone hotspot gateway is not ready");
+                    ConnectionManager.instance().failed(getString(R.string.connection_wifi_gateway_error));
                 }
                 if (Log.isInfo()) Log.i(TAG, "start wifi thead completed");
             } catch (TCPConnectException e){
                 Log.e(TAG, "TCP Connection error", e);
-                ConnectionManager.instance().failed("Could not reach Android Auto on the phone hotspot");
+                // The phone refuses port 5277 unless Android Auto Wireless is
+                // actually running on it. Say so on screen: the projection window
+                // closes within a second either way, which otherwise looks
+                // exactly like the app crashing.
+                String reason = getString(R.string.connection_wifi_endpoint_error, ipAddress);
+                ConnectionManager.instance().failed(reason);
+                notifyUser(reason);
                 stop();
             }
         });
@@ -173,40 +198,85 @@ public class ODAService extends Service implements IAndroidAutoEntityEventHandle
         }
     }
 
+    /**
+     * Whether a new projection session may be started right now. A session that
+     * is still running, or one whose native teardown has not finished yet, must
+     * be left alone.
+     */
+    private boolean canStartSession(){
+        if (isRunning_ || androidAutoEntity_ != null || stopping_.get()) {
+            if (Log.isWarn()) Log.w(TAG, "start ignored: previous session still active or shutting down");
+            return false;
+        }
+        return true;
+    }
+
     public void stop(){
         stopRequested_ = true;
-        if (!isRunning_ && androidAutoEntity_ == null) {
-            if (Log.isInfo()) Log.i(TAG, "service not running, already stopped?");
-            localBroadcastManager_.sendBroadcast(new Intent(ODAService.STOP_ACTION));
-            stopService(new Intent(this, ODAService.class));
+
+        // The native teardown is not reentrant, and stop() arrives from the UI
+        // thread, from the connection thread and from native quit callbacks.
+        if (!stopping_.compareAndSet(false, true)) {
+            if (Log.isInfo()) Log.i(TAG, "stop already in progress");
             return;
         }
 
-        isRunning_ = false;
+        try {
+            if (!isRunning_ && androidAutoEntity_ == null) {
+                if (Log.isInfo()) Log.i(TAG, "service not running, already stopped?");
+                localBroadcastManager_.sendBroadcast(new Intent(ODAService.STOP_ACTION));
+                stopService(new Intent(this, ODAService.class));
+                return;
+            }
 
-        if (Log.isInfo()) Log.i(TAG, "Stop");
+            isRunning_ = false;
 
-        if (Settings.instance().advanced.hondaIntegrationEnabled()){
-            HondaConnectManager.instance().endAudioBinding();
-        }
+            if (Log.isInfo()) Log.i(TAG, "Stop");
 
-        if (androidAutoEntity_ != null) {
-            androidAutoEntity_.stop();
-        }
+            // Every step below is individually guarded: anything that escapes here
+            // would leave androidAutoEntity_ set, and since that field gates
+            // canStartSession() the app could never connect again without being
+            // force stopped.
+            if (Settings.instance().advanced.hondaIntegrationEnabled()){
+                // init() only runs at boot when the setting was already on, so
+                // enabling it later leaves the singleton null.
+                HondaConnectManager hondaManager = HondaConnectManager.instance();
+                if (hondaManager != null) {
+                    try {
+                        hondaManager.endAudioBinding();
+                    } catch (Throwable t) {
+                        Log.e(TAG, "error ending Honda audio binding", t);
+                    }
+                }
+            }
 
-        if (androidAutoEntity_ != null) {
-            androidAutoEntity_.delete();
+            AndroidAutoEntity entity = androidAutoEntity_;
+            if (entity != null) {
+                try {
+                    entity.stop();
+                } catch (Throwable t) {
+                    Log.e(TAG, "error stopping Android Auto entity", t);
+                }
+                try {
+                    entity.delete();
+                } catch (Throwable t) {
+                    Log.e(TAG, "error deleting Android Auto entity", t);
+                }
+            }
+
+            Intent stopIntent = new Intent(ODAService.STOP_ACTION);
+            localBroadcastManager_.sendBroadcast(stopIntent);
+
+            Intent service = new Intent(this, ODAService.class);
+            stopService(service);
+        } finally {
+            // Cleared unconditionally so a failed teardown cannot wedge the
+            // service into a state where no further session can be started.
             androidAutoEntity_ = null;
+            startThread_ = null;
+            currentMode_ = null;
+            stopping_.set(false);
         }
-
-        startThread_ = null;
-        currentMode_ = null;
-
-        Intent stopIntent = new Intent(ODAService.STOP_ACTION);
-        localBroadcastManager_.sendBroadcast(stopIntent);
-
-        Intent service = new Intent(this, ODAService.class);
-        stopService(service);
     }
 
     @Override
@@ -216,6 +286,12 @@ public class ODAService extends Service implements IAndroidAutoEntityEventHandle
 
     public void onDestroy() {
         if (Log.isDebug()) Log.d(TAG, "onDestroy");
+        // stopService() from the home screen or the exit widget destroys this
+        // service without going through stop(), which used to leave the session,
+        // its io_service threads and the USB handle alive. The replacement service
+        // then starts with androidAutoEntity_ == null and happily builds a second
+        // session on top of the first one. stop() is idempotent via stopping_.
+        stop();
         super.onDestroy();
     }
 
@@ -239,7 +315,7 @@ public class ODAService extends Service implements IAndroidAutoEntityEventHandle
     @Keep
     @Override
     public void onAndroidAutoQuit() {
-        ConnectionManager.instance().detached("Android Auto session ended");
+        ConnectionManager.instance().detached(getString(R.string.connection_session_ended));
         stop();
     }
 
@@ -247,13 +323,16 @@ public class ODAService extends Service implements IAndroidAutoEntityEventHandle
     @Override
     public void onAndroidAutoQuitOnError(String error, int nativeErrorCode){
         Log.e(TAG, "closing with error " + error + "(" + nativeErrorCode + ")");
-        ConnectionManager.instance().failed(error);
-
-        mainHandler_.post(() -> {
-            Toast.makeText(this, "Closed due to " + error + " error", Toast.LENGTH_LONG).show();
-        });
+        String message = getString(R.string.connection_native_error_code, error, nativeErrorCode);
+        ConnectionManager.instance().failed(message);
+        notifyUser(message);
 
         stop();
+    }
+
+    /** Shows a message to the user from any thread. */
+    private void notifyUser(String message){
+        mainHandler_.post(() -> Toast.makeText(this, message, Toast.LENGTH_LONG).show());
     }
 
     @Keep
