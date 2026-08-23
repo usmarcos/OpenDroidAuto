@@ -1,5 +1,6 @@
 #include <error/Error.hpp>
 #include <Log.h>
+#include <future>
 #include "LibUsbEndpoint.h"
 
 
@@ -89,9 +90,24 @@ uint8_t LibUsbEndpoint::getAddress()
 void LibUsbEndpoint::cancelTransfers()
 {
     if (Log::isDebug()) Log_d("cancel transfers");
-    for(const auto& transfer : transfers_) {
-        libusb_cancel_transfer(transfer.first);
-    }
+
+    // transfers_ is only ever safe to touch from strand_ (transfer()/transferHandler()
+    // mutate it there). Cancelling used to walk it directly from the caller's thread,
+    // racing with transferHandler() erasing entries and freeing the libusb_transfer,
+    // which could crash inside libusb_cancel_transfer on an already-freed transfer.
+    // Dispatch onto the strand and block until it's done so callers (e.g. AOAPDevice's
+    // destructor) can still safely destroy this endpoint right after returning.
+    auto donePromise = std::make_shared<std::promise<void>>();
+    auto doneFuture = donePromise->get_future();
+
+    strand_->dispatch([this, donePromise]() mutable {
+        for(const auto& transfer : transfers_) {
+            libusb_cancel_transfer(transfer.first);
+        }
+        donePromise->set_value();
+    });
+
+    doneFuture.wait();
 }
 
 void LibUsbEndpoint::transferHandler(libusb_transfer *transfer) {
