@@ -2,13 +2,9 @@ package it.smg.hu.manager;
 
 /** Pure connection policy so retry and exit behavior can be tested without Android hardware. */
 public final class ConnectionPolicy {
-    public static final int MAX_RETRIES = 3;
-
     private ConnectionState state = ConnectionState.IDLE;
     private String mode;
-    private int retryCount;
-    private boolean autoStartSuppressed;
-    private boolean autoStartEnabled;
+    private boolean startSuppressed;
 
     public ConnectionState state() {
         return state;
@@ -18,24 +14,8 @@ public final class ConnectionPolicy {
         return mode;
     }
 
-    public int retryCount() {
-        return retryCount;
-    }
-
-    public boolean isAutoStartAllowed() {
-        return autoStartEnabled && !autoStartSuppressed;
-    }
-
     public boolean isManualStartAllowed() {
-        return !autoStartSuppressed;
-    }
-
-    public boolean isAutoStartEnabled() {
-        return autoStartEnabled;
-    }
-
-    public void setAutoStartEnabled(boolean enabled) {
-        autoStartEnabled = enabled;
+        return !startSuppressed;
     }
 
     public void transportAvailable(String connectionMode) {
@@ -43,8 +23,7 @@ public final class ConnectionPolicy {
             return;
         }
         mode = connectionMode;
-        retryCount = 0;
-        autoStartSuppressed = false;
+        startSuppressed = false;
         state = ConnectionState.IDLE;
     }
 
@@ -64,35 +43,21 @@ public final class ConnectionPolicy {
     }
 
     public void active() {
-        retryCount = 0;
         state = ConnectionState.ACTIVE;
     }
 
-    public void manualRetry() {
-        if (isManualStartAllowed()) {
-            retryCount = 0;
-            state = ConnectionState.CONNECTING;
-        }
-    }
-
     public void userExited() {
-        autoStartSuppressed = true;
+        startSuppressed = true;
         state = ConnectionState.EXITED;
     }
 
     public void detached() {
         mode = null;
-        retryCount = 0;
-        autoStartSuppressed = false;
+        startSuppressed = false;
         state = ConnectionState.IDLE;
     }
 
-    public boolean failed() {
+    public void failed() {
         state = ConnectionState.ERROR;
-        if (!autoStartEnabled || autoStartSuppressed || mode == null || retryCount >= MAX_RETRIES) {
-            return false;
-        }
-        retryCount++;
-        return true;
     }
 }

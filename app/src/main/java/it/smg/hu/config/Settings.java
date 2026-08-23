@@ -493,7 +493,6 @@ public class Settings {
         public final static String ADVANCED_ENABLED_DEBUG = "enabledebug";
         public final static String ADVANCED_LOG_DIR = "logDir";
         public final static String ADVANCED_ENABLE_WIFI = "enableWiFi";
-        public final static String ADVANCED_AUTO_START = "autoStart";
         public final static String ADVANCED_LOG_LEVEL = "logLevel";
         public final static String ADVANCED_LOG_PROTOCOL = "logProtocol";
         public final static String ADVANCED_THREADS_NUM = "threads";
@@ -506,7 +505,6 @@ public class Settings {
         public final static boolean ADVANCED_ENABLED_DEBUG_DEFAULT_VALUE = false;
         public final static String ADVANCED_LOG_DIR_DEFAULT_VALUE = "/mnt/sdcard/usbdrive2/ODA/";
         public final static boolean ADVANCED_ENABLE_WIFI_DEFAULT_VALUE = false;
-        public final static boolean ADVANCED_AUTO_START_DEFAULT_VALUE = false;
         public final static int ADVANCED_LOG_LEVEL_DEFAULT_VALUE = ILog.DEFAULT_LOG_LEVEL;
         public final static boolean ADVANCED_LOG_PROTOCOL_DEFAULT_VALUE = false;
         public final static int ADVANCED_THREADS_NUM_DEFAULT_VALUE = 4;
@@ -540,13 +538,6 @@ public class Settings {
             return SP.getBoolean(ADVANCED_ENABLE_WIFI, ADVANCED_ENABLE_WIFI_DEFAULT_VALUE);
         }
 
-        public void autoStartEnabled(boolean enabled){
-            SP.edit().putBoolean(ADVANCED_AUTO_START, enabled).apply();
-        }
-
-        public boolean autoStartEnabled(){
-            return SP.getBoolean(ADVANCED_AUTO_START, ADVANCED_AUTO_START_DEFAULT_VALUE);
-        }
 
         public int logLevel(){
             return SP.getInt(ADVANCED_LOG_LEVEL, ADVANCED_LOG_LEVEL_DEFAULT_VALUE);

@@ -4,7 +4,7 @@ Android Auto receiver for legacy Android ARM32 head units, including Honda Conne
 
 ## Connection behavior
 
-- USB is the primary path. The dashboard starts in manual mode for safe first-use diagnosis; enable **AUTO-START: ON** to open Android Auto automatically after Android grants access and the phone reaches AOAP mode.
+- USB is the primary path. When the phone reaches AOAP mode, use **START ANDROID AUTO** on the dashboard to begin the session.
 - Selecting **Exit** stops the session and keeps the dashboard open. Reconnect the USB cable to start a new automatic session.
 - Wi-Fi is optional. Enable it in settings only after the phone hotspot is already saved by Android on the head unit. The app uses the hotspot gateway on TCP port 5277 and retries short connection failures automatically.
 - Android controls USB permission. A non-rooted head unit can still show the system dialog on a first connection or after a device is disconnected; the app does not bypass that permission.

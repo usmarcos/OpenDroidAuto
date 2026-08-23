@@ -8,14 +8,11 @@ import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbManager;
 import android.net.ConnectivityManager;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
 
 import androidx.fragment.app.FragmentActivity;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import it.smg.hu.R;
-import it.smg.hu.config.Settings;
 import it.smg.hu.manager.ConnectionManager;
 import it.smg.hu.manager.ConnectionState;
 import it.smg.hu.manager.USBManager;
@@ -32,8 +29,6 @@ public class MainActivity extends FragmentActivity {
     private LocalBroadcastManager localBroadcastManager_;
     private boolean receiversRegistered_;
     private boolean playerLaunchPending_;
-    private final Handler handler_ = new Handler(Looper.getMainLooper());
-    private Runnable pendingLaunch_;
 
     private final BroadcastReceiver wifiReceiver = new BroadcastReceiver() {
         @Override
@@ -48,18 +43,11 @@ public class MainActivity extends FragmentActivity {
         @Override
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
-            if (USBManager.ATTACH_AOAP_DEVICE.equals(action)) {
-                schedulePlayer(ODAService.MODE_USB, false, 1800);
-            } else if (WIFIManager.CONNECT_WIFI.equals(action)) {
-                schedulePlayer(ODAService.MODE_WIFI, false, 1000);
-            } else if (ConnectionManager.ACTION_RETRY.equals(action)) {
-                schedulePlayer(intent.getStringExtra(ConnectionManager.EXTRA_MODE), false, 1200);
-            } else if (ConnectionManager.ACTION_STATE_CHANGED.equals(action)) {
+            if (ConnectionManager.ACTION_STATE_CHANGED.equals(action)) {
                 String state = intent.getStringExtra(ConnectionManager.EXTRA_STATE);
                 if (ConnectionState.ERROR.name().equals(state) || ConnectionState.IDLE.name().equals(state)
                         || ConnectionState.EXITED.name().equals(state)) {
                     playerLaunchPending_ = false;
-                    cancelPendingLaunch();
                 }
             }
         }
@@ -71,7 +59,6 @@ public class MainActivity extends FragmentActivity {
         usbManager_ = USBManager.instance();
         wifiManager_ = WIFIManager.instance();
         localBroadcastManager_ = LocalBroadcastManager.getInstance(this);
-        ConnectionManager.instance().setAutoStartEnabled(Settings.instance().advanced.autoStartEnabled());
 
         setContentView(R.layout.activity_main);
         if (savedInstanceState == null) {
@@ -123,7 +110,6 @@ public class MainActivity extends FragmentActivity {
         IntentFilter localFilter = new IntentFilter();
         localFilter.addAction(USBManager.ATTACH_AOAP_DEVICE);
         localFilter.addAction(WIFIManager.CONNECT_WIFI);
-        localFilter.addAction(ConnectionManager.ACTION_RETRY);
         localFilter.addAction(ConnectionManager.ACTION_STATE_CHANGED);
         localBroadcastManager_.registerReceiver(connectionReceiver, localFilter);
         receiversRegistered_ = true;
@@ -138,34 +124,11 @@ public class MainActivity extends FragmentActivity {
         receiversRegistered_ = false;
     }
 
-    private void schedulePlayer(final String mode, final boolean manual, long delayMs) {
-        if (mode == null || playerLaunchPending_ || pendingLaunch_ != null || PlayerActivity.isActive()) {
-            return;
-        }
-        if (!manual && !ConnectionManager.instance().isAutoStartAllowed()) {
-            return;
-        }
-        if (manual && !ConnectionManager.instance().isManualStartAllowed()) {
-            return;
-        }
-        pendingLaunch_ = new Runnable() {
-            @Override
-            public void run() {
-                pendingLaunch_ = null;
-                launchPlayer(mode, manual);
-            }
-        };
-        handler_.postDelayed(pendingLaunch_, delayMs);
-    }
-
-    private void launchPlayer(String mode, boolean manual) {
+    public void startConnectionManually(String mode) {
         if (mode == null || playerLaunchPending_ || PlayerActivity.isActive()) {
             return;
         }
-        if (!manual && !ConnectionManager.instance().isAutoStartAllowed()) {
-            return;
-        }
-        if (manual && !ConnectionManager.instance().isManualStartAllowed()) {
+        if (!ConnectionManager.instance().isManualStartAllowed()) {
             return;
         }
         if (ODAService.MODE_WIFI.equals(mode) && usbManager_ != null && usbManager_.aoapDevice() != null) {
@@ -178,14 +141,9 @@ public class MainActivity extends FragmentActivity {
         startActivity(player);
     }
 
-    public void startConnectionManually(String mode) {
-        schedulePlayer(mode, true, 0);
-    }
-
     /** Called by the home screen and PlayerActivity to prevent a reconnect loop. */
     public void exitSession() {
         playerLaunchPending_ = false;
-        cancelPendingLaunch();
         ConnectionManager.instance().userExited("Android Auto stopped. Reconnect the cable to start again.");
         stopService(new Intent(this, ODAService.class));
     }
@@ -195,10 +153,4 @@ public class MainActivity extends FragmentActivity {
         exitSession();
     }
 
-    private void cancelPendingLaunch() {
-        if (pendingLaunch_ != null) {
-            handler_.removeCallbacks(pendingLaunch_);
-            pendingLaunch_ = null;
-        }
-    }
 }

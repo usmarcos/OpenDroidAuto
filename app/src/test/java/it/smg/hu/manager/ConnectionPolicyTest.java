@@ -8,15 +8,11 @@ import org.junit.Test;
 
 public class ConnectionPolicyTest {
     @Test
-    public void retriesAreBoundedAndKeepTheConnectionMode() {
+    public void errorsKeepTheConnectionModeForManualRetry() {
         ConnectionPolicy policy = new ConnectionPolicy();
-        policy.setAutoStartEnabled(true);
         policy.transportAvailable("modeUSB");
 
-        assertTrue(policy.failed());
-        assertTrue(policy.failed());
-        assertTrue(policy.failed());
-        assertFalse(policy.failed());
+        policy.failed();
         assertEquals("modeUSB", policy.mode());
         assertEquals(ConnectionState.ERROR, policy.state());
     }
@@ -24,24 +20,14 @@ public class ConnectionPolicyTest {
     @Test
     public void userExitSuppressesRetriesUntilDetach() {
         ConnectionPolicy policy = new ConnectionPolicy();
-        policy.setAutoStartEnabled(true);
         policy.transportAvailable("modeUSB");
         policy.userExited();
 
-        assertFalse(policy.isAutoStartAllowed());
-        assertFalse(policy.failed());
+        assertFalse(policy.isManualStartAllowed());
+        policy.failed();
 
         policy.detached();
-        assertTrue(policy.isAutoStartAllowed());
+        assertTrue(policy.isManualStartAllowed());
         assertEquals(ConnectionState.IDLE, policy.state());
-    }
-
-    @Test
-    public void manualModeDoesNotScheduleAutomaticRetries() {
-        ConnectionPolicy policy = new ConnectionPolicy();
-        policy.transportAvailable("modeUSB");
-
-        assertFalse(policy.failed());
-        assertEquals(ConnectionState.ERROR, policy.state());
     }
 }

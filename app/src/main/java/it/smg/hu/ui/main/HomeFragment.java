@@ -34,7 +34,6 @@ public class HomeFragment extends Fragment {
     private TextView wifiStatus_;
     private ImageView indicator_;
     private Button retryButton_;
-    private Button autoStartButton_;
     private USBManager usbManager_;
     private WIFIManager wifiManager_;
     private LocalBroadcastManager broadcasts_;
@@ -76,13 +75,11 @@ public class HomeFragment extends Fragment {
         wifiStatus_ = view.findViewById(R.id.wifiStatus);
         indicator_ = view.findViewById(R.id.connectionIndicator);
         retryButton_ = view.findViewById(R.id.retryBtn);
-        autoStartButton_ = view.findViewById(R.id.autoStartBtn);
 
         view.findViewById(R.id.settingsBtn).setOnClickListener(v ->
                 startActivityForResult(new Intent(getContext(), SettingsActivity.class), MainActivity.SETTINGS_ACTIVITY_REQUEST));
         view.findViewById(R.id.exitBtn).setOnClickListener(v -> ((MainActivity) requireActivity()).exitSession());
         retryButton_.setOnClickListener(v -> retryConnection());
-        autoStartButton_.setOnClickListener(v -> toggleAutoStart());
 
         renderWifiAvailability();
         renderState(ConnectionManager.instance().state(), null, ConnectionManager.instance().mode());
@@ -125,16 +122,7 @@ public class HomeFragment extends Fragment {
             ((MainActivity) requireActivity()).startConnectionManually(mode);
         } else if (ODAService.MODE_USB.equals(mode) && usbManager_ != null) {
             usbManager_.retryLastDevice();
-        } else {
-            ConnectionManager.instance().retryNow();
         }
-    }
-
-    private void toggleAutoStart() {
-        boolean enabled = !Settings.instance().advanced.autoStartEnabled();
-        Settings.instance().advanced.autoStartEnabled(enabled);
-        ConnectionManager.instance().setAutoStartEnabled(enabled);
-        updateAutoStartButton();
     }
 
     private void renderWifiAvailability() {
@@ -148,11 +136,9 @@ public class HomeFragment extends Fragment {
     private void renderState(ConnectionState state, String message, String mode) {
         renderedState_ = state;
         boolean manualStartAvailable = state != ConnectionState.ERROR && mode != null
-                && ConnectionManager.instance().isManualStartAllowed()
-                && !ConnectionManager.instance().isAutoStartEnabled();
+                && ConnectionManager.instance().isManualStartAllowed();
         retryButton_.setVisibility(state == ConnectionState.ERROR || manualStartAvailable ? View.VISIBLE : View.GONE);
         retryButton_.setText(state == ConnectionState.ERROR ? R.string.home_retry : R.string.home_start);
-        updateAutoStartButton();
         String detail = message;
         int badge = R.drawable.status_badge_idle;
         int icon = R.drawable.usb_dis;
@@ -210,8 +196,4 @@ public class HomeFragment extends Fragment {
         return detail == null || detail.trim().isEmpty() ? getString(fallbackResource) : detail;
     }
 
-    private void updateAutoStartButton() {
-        autoStartButton_.setText(ConnectionManager.instance().isAutoStartEnabled()
-                ? R.string.home_auto_start_on : R.string.home_auto_start_off);
-    }
 }

@@ -7,11 +7,8 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.CheckBox;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Spinner;
-import android.widget.TextView;
-import android.view.ViewGroup;
 
 import androidx.fragment.app.Fragment;
 
@@ -25,40 +22,6 @@ public abstract class BaseSettingsFragment extends Fragment {
     protected Settings settings;
 
     protected abstract String tag();
-
-    @Override
-    public void onViewCreated(View view, android.os.Bundle savedInstanceState) {
-        super.onViewCreated(view, savedInstanceState);
-        styleSettingsSurface(view);
-    }
-
-    /** Applies the common automotive settings theme without changing each fragment's behavior. */
-    private void styleSettingsSurface(View view) {
-        if (view instanceof ViewGroup) {
-            view.setBackgroundColor(getResources().getColor(R.color.oda_surface));
-            ViewGroup group = (ViewGroup) view;
-            for (int i = 0; i < group.getChildCount(); i++) {
-                styleSettingsSurface(group.getChildAt(i));
-            }
-            return;
-        }
-        if (view instanceof EditText) {
-            EditText field = (EditText) view;
-            field.setTextColor(getResources().getColor(R.color.oda_text_primary));
-            field.setHintTextColor(getResources().getColor(R.color.oda_text_secondary));
-            field.setBackgroundResource(R.drawable.settings_input);
-        } else if (view instanceof CheckBox) {
-            ((CheckBox) view).setTextColor(getResources().getColor(R.color.oda_text_primary));
-        } else if (view instanceof Button) {
-            Button button = (Button) view;
-            button.setTextColor(getResources().getColor(R.color.oda_text_primary));
-            button.setBackgroundResource(R.drawable.button_secondary);
-        } else if (view instanceof Spinner) {
-            view.setBackgroundResource(R.drawable.settings_spinner);
-        } else if (view instanceof TextView) {
-            ((TextView) view).setTextColor(getResources().getColor(R.color.oda_text_primary));
-        }
-    }
 
     protected void initEditText(EditText editText, Settings.Base base, String settingsKey, String defaultValue){
         initEditText(editText, base, settingsKey, defaultValue, null);

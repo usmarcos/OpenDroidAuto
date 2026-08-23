@@ -3,8 +3,8 @@
     style="?android:attr/spinnerDropDownItemStyle"
     android:singleLine="true"
     android:layout_width="match_parent"
-    android:textColor="@color/oda_text_primary"
-    android:background="@color/oda_surface_elevated"
+    android:textColor="#000"
+    android:background="#F1F1F1"
     android:layout_height="48dp"
     android:gravity="center"
     android:ellipsize="marquee"/>
