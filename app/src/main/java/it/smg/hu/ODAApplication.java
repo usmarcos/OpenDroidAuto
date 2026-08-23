@@ -34,15 +34,32 @@ public class ODAApplication extends MultiDexApplication {
         super.attachBaseContext(base);
 
         Settings.build(base);
+
+        final Thread.UncaughtExceptionHandler previousHandler = Thread.getDefaultUncaughtExceptionHandler();
         Runtime.setExceptionHandler((thread, t) -> {
-            Log.e(TAG, "uncaughtException in " + thread.getName(), t);
+            // android.util.Log is used directly (not the ODA file-log pipe) so this
+            // line always reaches logcat, even if ODALog/Settings aren't in a state
+            // where the custom logger can write.
+            android.util.Log.e(TAG, "uncaughtException in " + thread.getName(), t);
 
-            Log.shutdown();
+            try {
+                Log.e(TAG, "uncaughtException in " + thread.getName(), t);
+                Log.shutdown();
 
-            Intent service = new Intent(this, ODAService.class);
-            stopService(service);
+                Intent service = new Intent(this, ODAService.class);
+                stopService(service);
+            } catch (Throwable inner) {
+                android.util.Log.e(TAG, "error while handling uncaughtException", inner);
+            }
 
-            android.os.Process.killProcess(android.os.Process.myPid());
+            // Hand off to Android's default handler so the crash still gets a
+            // tombstone/"App has stopped" dialog and a FATAL EXCEPTION logcat entry,
+            // instead of the process just disappearing with no trace.
+            if (previousHandler != null) {
+                previousHandler.uncaughtException(thread, t);
+            } else {
+                android.os.Process.killProcess(android.os.Process.myPid());
+            }
         });
 
         Runtime.init(getApplicationContext());
