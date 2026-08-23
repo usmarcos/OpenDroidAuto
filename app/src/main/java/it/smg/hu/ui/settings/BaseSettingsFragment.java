@@ -1,6 +1,8 @@
 package it.smg.hu.ui.settings;
 
 import android.content.Context;
+import android.content.res.ColorStateList;
+import android.view.Gravity;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
@@ -8,11 +10,13 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.CheckBox;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.view.ViewGroup;
 
 import androidx.fragment.app.Fragment;
+import androidx.core.widget.CompoundButtonCompat;
 
 import java.util.concurrent.Callable;
 
@@ -48,16 +52,41 @@ public abstract class BaseSettingsFragment extends Fragment {
             field.setTextColor(getResources().getColor(primaryColor));
             field.setHintTextColor(getResources().getColor(secondaryColor));
             field.setBackgroundResource(dark ? R.drawable.settings_input_dark : R.drawable.settings_input_light);
+            field.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
             field.setMinHeight(dp(48));
         } else if (view instanceof CheckBox) {
-            ((CheckBox) view).setTextColor(getResources().getColor(primaryColor));
+            CheckBox checkBox = (CheckBox) view;
+            checkBox.setTextColor(getResources().getColor(primaryColor));
+            checkBox.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
+            int[][] states = new int[][]{
+                    new int[]{android.R.attr.state_checked}, new int[]{}
+            };
+            int[] colors = new int[]{
+                    getResources().getColor(R.color.oda_accent),
+                    getResources().getColor(dark ? R.color.oda_text_primary : R.color.settings_text_secondary)
+            };
+            CompoundButtonCompat.setButtonTintList(checkBox, new ColorStateList(states, colors));
+            alignToStart(checkBox, true);
             view.setMinimumHeight(dp(48));
         } else if (view instanceof Spinner) {
             view.setBackgroundResource(dark ? R.drawable.settings_spinner_dark : R.drawable.settings_spinner_light);
             view.setMinimumHeight(dp(48));
         } else if (view instanceof TextView) {
-            ((TextView) view).setTextColor(getResources().getColor(primaryColor));
+            TextView text = (TextView) view;
+            text.setTextColor(getResources().getColor(primaryColor));
+            text.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
         }
+    }
+
+    private void alignToStart(View view, boolean fillWidth) {
+        ViewGroup.LayoutParams params = view.getLayoutParams();
+        if (fillWidth) {
+            params.width = ViewGroup.LayoutParams.MATCH_PARENT;
+        }
+        if (params instanceof LinearLayout.LayoutParams) {
+            ((LinearLayout.LayoutParams) params).gravity = Gravity.LEFT;
+        }
+        view.setLayoutParams(params);
     }
 
     private int dp(int value) {

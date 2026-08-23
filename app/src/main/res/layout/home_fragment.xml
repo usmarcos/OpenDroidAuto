@@ -4,25 +4,26 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/home_light_surface"
-    android:padding="24dp">
+    android:padding="16dp">
 
     <LinearLayout
         android:id="@+id/header"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="48dp"
+        android:layout_alignParentTop="true"
         android:gravity="center_vertical"
         android:orientation="horizontal">
 
         <ImageView
-            android:layout_width="48dp"
-            android:layout_height="48dp"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
             android:contentDescription="@string/app_name"
             android:src="@drawable/logo" />
 
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginLeft="14dp"
+            android:layout_marginLeft="12dp"
             android:layout_weight="1"
             android:orientation="vertical">
 
@@ -30,127 +31,42 @@
                 android:id="@+id/homeTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:includeFontPadding="false"
                 android:text="@string/app_name"
                 android:textColor="@color/home_light_text_primary"
-                android:textSize="26sp"
+                android:textSize="23sp"
                 android:textStyle="bold" />
 
             <TextView
                 android:id="@+id/homeSubtitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:includeFontPadding="false"
+                android:maxLines="1"
                 android:text="@string/home_subtitle"
                 android:textColor="@color/home_light_text_secondary"
-                android:textSize="14sp" />
+                android:textSize="13sp" />
         </LinearLayout>
 
         <TextView
             android:id="@+id/statusBadge"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_height="36dp"
             android:background="@drawable/status_badge_idle_light"
+            android:gravity="center"
+            android:includeFontPadding="false"
             android:paddingLeft="14dp"
-            android:paddingTop="8dp"
             android:paddingRight="14dp"
-            android:paddingBottom="8dp"
             android:text="@string/home_status_waiting"
             android:textColor="@color/home_light_text_primary"
-            android:textSize="14sp"
+            android:textSize="13sp"
             android:textStyle="bold" />
-    </LinearLayout>
-
-    <LinearLayout
-        android:id="@+id/statusPanel"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_centerInParent="true"
-        android:layout_marginLeft="72dp"
-        android:layout_marginRight="72dp"
-        android:background="@drawable/panel_surface_light"
-        android:gravity="center"
-        android:orientation="vertical"
-        android:padding="26dp">
-
-        <ImageView
-            android:id="@+id/connectionIndicator"
-            android:layout_width="64dp"
-            android:layout_height="64dp"
-            android:contentDescription="@string/home_connection_status"
-            android:src="@drawable/usb_dis" />
-
-        <TextView
-            android:id="@+id/statusTitle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:gravity="center"
-            android:text="@string/home_waiting_title"
-            android:textColor="@color/home_light_text_primary"
-            android:textSize="24sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:id="@+id/statusDetail"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:gravity="center"
-            android:text="@string/home_waiting_detail"
-            android:textColor="@color/home_light_text_secondary"
-            android:textSize="16sp" />
-
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="18dp"
-            android:orientation="horizontal">
-
-            <TextView
-                android:id="@+id/usbStatus"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:background="@drawable/status_badge_idle_light"
-                android:paddingLeft="12dp"
-                android:paddingTop="7dp"
-                android:paddingRight="12dp"
-                android:paddingBottom="7dp"
-                android:text="@string/home_usb_waiting"
-                android:textColor="@color/home_light_text_secondary"
-                android:textSize="14sp" />
-
-            <TextView
-                android:id="@+id/wifiStatus"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginLeft="10dp"
-                android:background="@drawable/status_badge_idle_light"
-                android:paddingLeft="12dp"
-                android:paddingTop="7dp"
-                android:paddingRight="12dp"
-                android:paddingBottom="7dp"
-                android:text="@string/home_wifi_off"
-                android:textColor="@color/home_light_text_secondary"
-                android:textSize="14sp" />
-        </LinearLayout>
-
-        <Button
-            android:id="@+id/retryBtn"
-            style="@style/AutomotiveButton"
-            android:layout_width="wrap_content"
-            android:layout_height="52dp"
-            android:layout_marginTop="20dp"
-            android:background="@drawable/button_primary"
-            android:minWidth="180dp"
-            android:text="@string/home_retry"
-            android:textColor="@color/oda_on_accent"
-            android:textSize="16sp"
-            android:visibility="gone" />
     </LinearLayout>
 
     <LinearLayout
         android:id="@+id/homeActions"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="48dp"
         android:layout_alignParentBottom="true"
         android:gravity="center"
         android:orientation="horizontal">
@@ -158,19 +74,21 @@
         <Button
             android:id="@+id/settingsBtn"
             style="@style/AutomotiveButton"
-            android:layout_width="160dp"
-            android:layout_height="52dp"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
             android:background="@drawable/button_secondary_light"
             android:text="@string/settings"
             android:textColor="@color/home_light_text_primary"
-            android:textSize="16sp" />
+            android:textSize="15sp" />
 
         <Button
             android:id="@+id/themeBtn"
             style="@style/AutomotiveButton"
-            android:layout_width="168dp"
-            android:layout_height="52dp"
-            android:layout_marginLeft="12dp"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_marginLeft="8dp"
+            android:layout_weight="1"
             android:background="@drawable/button_secondary_light"
             android:text="@string/theme_light"
             android:textColor="@color/home_light_text_primary"
@@ -179,12 +97,129 @@
         <Button
             android:id="@+id/exitBtn"
             style="@style/AutomotiveButton"
-            android:layout_width="160dp"
-            android:layout_height="52dp"
-            android:layout_marginLeft="12dp"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_marginLeft="8dp"
+            android:layout_weight="1"
             android:background="@drawable/button_secondary_light"
             android:text="@string/exit"
             android:textColor="@color/home_light_text_primary"
-            android:textSize="16sp" />
+            android:textSize="15sp" />
     </LinearLayout>
+
+    <FrameLayout
+        android:id="@+id/primaryActionArea"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:layout_above="@id/homeActions"
+        android:layout_marginBottom="6dp">
+
+        <Button
+            android:id="@+id/retryBtn"
+            style="@style/AutomotiveButton"
+            android:layout_width="240dp"
+            android:layout_height="48dp"
+            android:layout_gravity="center"
+            android:background="@drawable/button_primary"
+            android:text="@string/home_retry"
+            android:textColor="@color/oda_on_accent"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:visibility="gone" />
+    </FrameLayout>
+
+    <FrameLayout
+        android:id="@+id/statusArea"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_above="@id/primaryActionArea"
+        android:layout_below="@id/header"
+        android:layout_marginTop="6dp"
+        android:layout_marginBottom="4dp"
+        android:clipChildren="true"
+        android:clipToPadding="true">
+
+        <LinearLayout
+            android:id="@+id/statusPanel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginLeft="40dp"
+            android:layout_marginRight="40dp"
+            android:background="@drawable/panel_surface_light"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:paddingLeft="18dp"
+            android:paddingTop="12dp"
+            android:paddingRight="18dp"
+            android:paddingBottom="12dp">
+
+            <ImageView
+                android:id="@+id/connectionIndicator"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:contentDescription="@string/home_connection_status"
+                android:src="@drawable/usb_dis" />
+
+            <TextView
+                android:id="@+id/statusTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:text="@string/home_waiting_title"
+                android:textColor="@color/home_light_text_primary"
+                android:textSize="22sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/statusDetail"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:maxLines="2"
+                android:text="@string/home_waiting_detail"
+                android:textColor="@color/home_light_text_secondary"
+                android:textSize="15sp" />
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="32dp"
+                android:layout_marginTop="8dp"
+                android:gravity="center"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/usbStatus"
+                    android:layout_width="wrap_content"
+                    android:layout_height="32dp"
+                    android:background="@drawable/status_badge_idle_light"
+                    android:gravity="center"
+                    android:includeFontPadding="false"
+                    android:paddingLeft="12dp"
+                    android:paddingRight="12dp"
+                    android:text="@string/home_usb_waiting"
+                    android:textColor="@color/home_light_text_secondary"
+                    android:textSize="13sp" />
+
+                <TextView
+                    android:id="@+id/wifiStatus"
+                    android:layout_width="wrap_content"
+                    android:layout_height="32dp"
+                    android:layout_marginLeft="8dp"
+                    android:background="@drawable/status_badge_idle_light"
+                    android:gravity="center"
+                    android:includeFontPadding="false"
+                    android:paddingLeft="12dp"
+                    android:paddingRight="12dp"
+                    android:text="@string/home_wifi_off"
+                    android:textColor="@color/home_light_text_secondary"
+                    android:textSize="13sp" />
+            </LinearLayout>
+        </LinearLayout>
+    </FrameLayout>
 </RelativeLayout>

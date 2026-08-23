@@ -3,8 +3,11 @@
 	<string name="home_subtitle">Android Auto for legacy head units</string>
 	<string name="home_connection_status">Connection status</string>
 	<string name="home_status_waiting">WAITING</string>
+	<string name="home_status_ready">READY</string>
 	<string name="home_waiting_title">Connect your phone</string>
 	<string name="home_waiting_detail">The Start button appears when USB or Wi-Fi is ready.</string>
+	<string name="home_ready_title">Ready to start</string>
+	<string name="home_ready_detail">USB is prepared. Press Start to open Android Auto.</string>
 	<string name="home_usb_waiting">USB waiting</string>
 	<string name="home_wifi_off">Wi-Fi off</string>
 	<string name="home_retry">TRY AGAIN</string>

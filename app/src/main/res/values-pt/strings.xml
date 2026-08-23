@@ -4,8 +4,11 @@
     <string name="home_subtitle">Android Auto para multimídias legadas</string>
     <string name="home_connection_status">Estado da conexão</string>
     <string name="home_status_waiting">AGUARDANDO</string>
+    <string name="home_status_ready">PRONTO</string>
     <string name="home_waiting_title">Conecte seu telefone</string>
     <string name="home_waiting_detail">O botão Start aparece quando o USB ou Wi-Fi estiver pronto.</string>
+    <string name="home_ready_title">Pronto para iniciar</string>
+    <string name="home_ready_detail">O USB está preparado. Pressione Iniciar para abrir o Android Auto.</string>
     <string name="home_usb_waiting">USB aguardando</string>
     <string name="home_wifi_off">Wi-Fi desligado</string>
     <string name="home_retry">TENTAR NOVAMENTE</string>

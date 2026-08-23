@@ -46,6 +46,7 @@ The app ships a legacy logo and current connection assets in `app/src/main/res/d
 - Connect first; ask only when the operating system requires it.
 - Make connection state and recovery obvious without distracting the driver.
 - Preserve the working Honda path while degrading safely elsewhere.
+- Projection lifecycle changes must be based on the proven manual-start implementation; transport hardening stays outside that lifecycle unless hardware evidence requires otherwise.
 - Prefer bounded retries and clear recovery over hidden loops.
 
 ## Accessibility & Inclusion

@@ -42,9 +42,8 @@ public class PlayerActivity extends Activity implements ServiceConnection, Surfa
     private String startMode_;
     private boolean isRunning_ = false;
     private boolean isServiceBound_ = false;
-    private boolean surfaceReady_ = false;
 
-    private static volatile boolean isActive_;
+    private static boolean isActive_;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -68,13 +67,11 @@ public class PlayerActivity extends Activity implements ServiceConnection, Surfa
 
         setContentView(R.layout.activity_player);
 
-        HondaConnectManager hondaManager = hondaManager();
-        if (hondaManager != null){
-            hondaManager.initialize();
+        if (Settings.instance().advanced.hondaIntegrationEnabled()){
+            HondaConnectManager.instance().initialize();
         }
 
         surfaceView_ = findViewById(R.id.surfaceView);
-        surfaceView_.getHolder().addCallback(this);
     }
 
     @Override
@@ -115,21 +112,19 @@ public class PlayerActivity extends Activity implements ServiceConnection, Surfa
         super.onResume();
         if (Log.isDebug()) Log.d(TAG, "onResume");
 
-        initReceivers();
-        isActive_ = true;
-
         Intent odaServiceIntent = new Intent(this, ODAService.class);
         startService(odaServiceIntent);
         bindService(odaServiceIntent, this, BIND_AUTO_CREATE | BIND_ABOVE_CLIENT | BIND_IMPORTANT);
 
-        HondaConnectManager hondaManager = hondaManager();
-        if (hondaManager != null){
-            hondaManager.initAudioBinding();
+        if (Settings.instance().advanced.hondaIntegrationEnabled()){
+            HondaConnectManager.instance().initAudioBinding();
         }
 
         NotificationFactory.instance().dismissAll();
         AppBadge.instance().dismiss();
 
+        initReceivers();
+        isActive_ = true;
     }
 
     @Override
@@ -142,13 +137,10 @@ public class PlayerActivity extends Activity implements ServiceConnection, Surfa
 
         if (isServiceBound_) {
             unbindService(this);
-            isServiceBound_ = false;
-            odaService_ = null;
         }
 
-        HondaConnectManager hondaManager = hondaManager();
-        if (hondaManager != null){
-            hondaManager.sendToBackground();
+        if (Settings.instance().advanced.hondaIntegrationEnabled()){
+            HondaConnectManager.instance().sendToBackground();
         }
 
         AppBadge.instance().show();
@@ -190,17 +182,11 @@ public class PlayerActivity extends Activity implements ServiceConnection, Surfa
 
     @Override
     protected void onDestroy() {
-        if (surfaceView_ != null) {
-            surfaceView_.getHolder().removeCallback(this);
-        }
-        if (Log.isDebug()) Log.d(TAG, "onDestroy");
         super.onDestroy();
+        if (Log.isDebug()) Log.d(TAG, "onDestroy");
     }
 
     private void initReceivers(){
-        if (localReceiver_ != null) {
-            return;
-        }
         if (Log.isDebug()) Log.d(TAG, "Registering LocalReceiver");
         IntentFilter localFilter = new IntentFilter();
         localFilter.addAction(ODAService.STOP_ACTION);
@@ -210,22 +196,14 @@ public class PlayerActivity extends Activity implements ServiceConnection, Surfa
     }
 
     @Override
-    public void surfaceCreated(SurfaceHolder holder) {
-        surfaceReady_ = holder.getSurface() != null && holder.getSurface().isValid();
-        startWhenReady();
-    }
+    public void surfaceCreated(SurfaceHolder holder) {}
 
     @Override
-    public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
-        surfaceReady_ = width > 0 && height > 0 && holder.getSurface() != null
-                && holder.getSurface().isValid();
-        startWhenReady();
-    }
+    public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {}
 
     @Override
     public void surfaceDestroyed(SurfaceHolder holder) {
         Log.d(TAG, "surfaceDestroyed");
-        surfaceReady_ = false;
         if (odaService_ != null) {
             odaService_.releaseFocus();
         }
@@ -239,18 +217,21 @@ public class PlayerActivity extends Activity implements ServiceConnection, Surfa
 
         isServiceBound_ = true;
 
-        startWhenReady();
+        if (isRunning_){
+            odaService_.gainFocus();
+        } else {
+            start();
+        }
     }
 
     private void start(){
 
-        HondaConnectManager hondaManager = hondaManager();
-        if (hondaManager != null){
-            hondaManager.adjustPermission();
+        if (Settings.instance().advanced.hondaIntegrationEnabled()){
+            HondaConnectManager.instance().adjustPermission();
         }
 
         if (startMode_ == null) {
-            ConnectionManager.instance().failed(getString(R.string.connection_mode_missing));
+            ConnectionManager.instance().failed("No connection mode was provided");
             finish();
             return;
         }
@@ -268,17 +249,6 @@ public class PlayerActivity extends Activity implements ServiceConnection, Surfa
         }
 
         isRunning_ = true;
-    }
-
-    private void startWhenReady() {
-        if (odaService_ == null || !surfaceReady_) {
-            return;
-        }
-        if (isRunning_) {
-            odaService_.gainFocus();
-        } else {
-            start();
-        }
     }
 
     @Override
@@ -300,7 +270,6 @@ public class PlayerActivity extends Activity implements ServiceConnection, Surfa
         public void onReceive(Context context, Intent intent) {
             if (Log.isDebug()) Log.d(TAG, "received action " + intent.getAction());
             if (ODAService.STOP_ACTION.equalsIgnoreCase(intent.getAction())){
-                isRunning_ = false;
                 finish();
 
             } else if (ODAService.STOP_VIDEO_INDICATION.equalsIgnoreCase(intent.getAction())){
@@ -314,18 +283,11 @@ public class PlayerActivity extends Activity implements ServiceConnection, Surfa
     }
 
     private void exitSession() {
-        ConnectionManager.instance().userExited(getString(R.string.connection_user_stopped));
+        ConnectionManager.instance().userExited("Android Auto stopped. Reconnect the cable to start again.");
         if (odaService_ != null) {
             odaService_.stop();
         } else {
             finish();
         }
-    }
-
-    private HondaConnectManager hondaManager() {
-        if (!Settings.instance().advanced.hondaIntegrationEnabled()) {
-            return null;
-        }
-        return HondaConnectManager.instance();
     }
 }

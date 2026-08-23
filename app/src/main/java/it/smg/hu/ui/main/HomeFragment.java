@@ -242,9 +242,12 @@ public class HomeFragment extends Fragment {
                 break;
             case IDLE:
             default:
-                statusBadge_.setText(R.string.home_status_waiting);
-                statusTitle_.setText(R.string.home_waiting_title);
-                detail = fallback(detail, R.string.home_waiting_detail);
+                statusBadge_.setText(manualStartAvailable
+                        ? R.string.home_status_ready : R.string.home_status_waiting);
+                statusTitle_.setText(manualStartAvailable
+                        ? R.string.home_ready_title : R.string.home_waiting_title);
+                detail = fallback(detail, manualStartAvailable
+                        ? R.string.home_ready_detail : R.string.home_waiting_detail);
                 break;
         }
         statusBadge_.setBackgroundResource(badge);

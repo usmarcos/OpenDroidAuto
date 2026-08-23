@@ -67,9 +67,6 @@ public class AudioCodec implements IAudioCodec, Runnable {
 
     @Override
     public void write(ByteBuffer buffer, long timestamp) {
-        if (!running_.get()) {
-            return;
-        }
         if (Log.isVerbose()) Log.v(TAG, "buffer size: " + buffer.limit());
         ByteBuffer source = buffer.slice();
         final int size = source.remaining();
@@ -100,18 +97,20 @@ public class AudioCodec implements IAudioCodec, Runnable {
     @Override
     public void stop() {
         if (Log.isInfo()) Log.i(TAG, "Stop");
-        running_.set(false);
-        if (codecThread_ != null){
-            codecThread_.interrupt();
-            try {
-                codecThread_.join(1000);
-                if (Log.isDebug()) Log.d(TAG + "_" + codecThread_.getName(), "thread joined");
-            } catch (InterruptedException ignored) {
-                Thread.currentThread().interrupt();
+        if (running_.get()) {
+            running_.set(false);
+
+            if (codecThread_ != null){
+                try {
+                    codecThread_.join(1000);
+                    if (Log.isDebug()) Log.d(TAG + "_" + codecThread_.getName(), "thread joined");
+                } catch (InterruptedException ignored) {}
+                codecThread_ = null;
             }
-            codecThread_ = null;
+
+            queue_.clear();
+            if (Log.isDebug()) Log.d(TAG, "queue empty");
         }
-        queue_.clear();
     }
 
     @Override
@@ -132,52 +131,42 @@ public class AudioCodec implements IAudioCodec, Runnable {
                 audioTrack_ = new AudioTrack(streamType_, sampleRate_, channels2num(channelConfig_), sampleSizeFromInt(sampleSize_), bufferSize_ * 3, AudioTrack.MODE_STREAM);
             } catch (Exception e) {
                 Log.e(TAG, "error in audiotrack creation", e);
-                running_.set(false);
                 return;
             }
 
             if (Log.isInfo()) Log.i(TAG, "initialized");
         }
 
-        try {
-            if (audioTrack_ != null) {
-                if (Log.isInfo()) Log.i(TAG, "starting audiotrack");
-                audioTrack_.play();
-            }
+        if (audioTrack_ != null) {
+            if (Log.isInfo()) Log.i(TAG, "starting audiotrack");
+            audioTrack_.play();
+        }
 
-            while (running_.get()) {
-                byte[] data;
-                try {
-                    data = queue_.poll(50, TimeUnit.MILLISECONDS);
-                } catch (InterruptedException ignored) {
-                    break;
-                }
-                if (data != null && audioTrack_ != null){
-                    audioTrack_.write(data, 0, data.length);
-                }
+        if (Log.isVerbose()) Log.v(TAG + "_" + codecThread_.getName(), "running thread");
+        while (running_.get()) {
+            byte[] data = null;
+            try {
+                data = queue_.poll(50, TimeUnit.MILLISECONDS);
+            } catch (InterruptedException ignored) {
+                Thread.currentThread().interrupt();
             }
-        } catch (Exception e) {
-            Log.e(TAG, "Audio playback error", e);
-        } finally {
-            running_.set(false);
-            releaseAudioTrack();
+            if (data != null){
+                audioTrack_.write(data, 0, data.length);
+            }
         }
-    }
 
-    private void releaseAudioTrack() {
-        AudioTrack audioTrack = audioTrack_;
-        audioTrack_ = null;
-        if (audioTrack == null) {
-            return;
-        }
-        try {
-            if (audioTrack.getPlayState() == AudioTrack.PLAYSTATE_PLAYING) {
-                audioTrack.flush();
-                audioTrack.stop();
+        if (audioTrack_ != null) {
+            if (Log.isInfo()) Log.i(TAG, "stop audiotrack");
+            if (audioTrack_.getPlayState() == AudioTrack.PLAYSTATE_PLAYING) {
+                audioTrack_.flush();
+                audioTrack_.stop();
             }
-        } catch (IllegalStateException e) {
-            Log.e(TAG, "Error stopping AudioTrack", e);
+            audioTrack_.release();
+            audioTrack_ = null;
         }
-        audioTrack.release();
+
+        if (Log.isInfo()) Log.i(TAG, "audiotrack released");
+
+        if (Log.isVerbose()) Log.v(TAG + "_" + codecThread_.getName(), "thread ended");
     }
 }
