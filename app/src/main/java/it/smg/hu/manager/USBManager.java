@@ -226,24 +226,30 @@ public class USBManager {
     }
 
     private void negotiateAoap(int operationId, int sourceDeviceId) {
-        for (int attempt = 0; attempt < UsbRetryPolicy.NEGOTIATION_ATTEMPTS; attempt++) {
-            if (!isAoapOperationCurrent(operationId)) {
-                return;
+        try {
+            for (int attempt = 0; attempt < UsbRetryPolicy.NEGOTIATION_ATTEMPTS; attempt++) {
+                if (!isAoapOperationCurrent(operationId)) {
+                    return;
+                }
+                UsbDevice device = findDeviceById(sourceDeviceId);
+                if (device == null) {
+                    break;
+                }
+                if (checkAOAPDevice(device)) {
+                    mainHandler_.post(() -> handleUsbAttached(device));
+                    return;
+                }
+                if (requestAOAP(device)) {
+                    break;
+                }
+                if (attempt + 1 < UsbRetryPolicy.NEGOTIATION_ATTEMPTS) {
+                    SystemClock.sleep(UsbRetryPolicy.negotiationDelayMs(attempt));
+                }
             }
-            UsbDevice device = findDeviceById(sourceDeviceId);
-            if (device == null) {
-                break;
-            }
-            if (checkAOAPDevice(device)) {
-                mainHandler_.post(() -> handleUsbAttached(device));
-                return;
-            }
-            if (requestAOAP(device)) {
-                break;
-            }
-            if (attempt + 1 < UsbRetryPolicy.NEGOTIATION_ATTEMPTS) {
-                SystemClock.sleep(UsbRetryPolicy.negotiationDelayMs(attempt));
-            }
+        } catch (Throwable error) {
+            Log.e(TAG, "AOAP negotiation failed", error);
+            mainHandler_.post(() -> ConnectionManager.instance().failed(ctx_.getString(R.string.connection_usb_switch_error)));
+            return;
         }
         scheduleAoapScan(operationId, 0);
     }
@@ -547,6 +553,9 @@ public class USBManager {
 
                 if (Log.isDebug()) Log.d(TAG, "switchOAP everything OK");
                 return true;
+            } catch (Exception error) {
+                Log.e(TAG, "controlTransfer failed during AOAP negotiation", error);
+                return false;
             } finally {
                 if (Log.isDebug()) Log.d(TAG, "Closing connection");
                 usbConnection.close();

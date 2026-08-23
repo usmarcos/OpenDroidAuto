@@ -1,6 +1,7 @@
 package it.smg.hu;
 
 import android.content.Context;
+import android.content.Intent;
 
 import androidx.multidex.MultiDexApplication;
 
@@ -11,6 +12,7 @@ import it.smg.hu.manager.HondaPlatform;
 import it.smg.hu.manager.ConnectionManager;
 import it.smg.hu.manager.USBManager;
 import it.smg.hu.manager.WIFIManager;
+import it.smg.hu.service.ODAService;
 
 import it.smg.hu.ui.notification.AppBadge;
 import it.smg.libs.aasdk.Runtime;
@@ -32,19 +34,18 @@ public class ODAApplication extends MultiDexApplication {
         super.attachBaseContext(base);
 
         Settings.build(base);
-//        Runtime.setExceptionHandler((thread, t) -> {
-//            Log.e(TAG, "uncaughtException in " + thread.getName(), t);
-//
-//            Log.shutdown();
-//            Runtime.delete();
-//
-//            Intent service = new Intent(this, ODAService.class);
-//            stopService(service);
-//
-//            android.os.Process.killProcess(android.os.Process.myPid());
-//        });
+        Runtime.setExceptionHandler((thread, t) -> {
+            Log.e(TAG, "uncaughtException in " + thread.getName(), t);
 
-//        Runtime.init(getApplicationContext());
+            Log.shutdown();
+
+            Intent service = new Intent(this, ODAService.class);
+            stopService(service);
+
+            android.os.Process.killProcess(android.os.Process.myPid());
+        });
+
+        Runtime.init(getApplicationContext());
         Runtime.initLog(new ODALog());
     }
 
