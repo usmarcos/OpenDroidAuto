@@ -1,10 +1,9 @@
 package it.smg.hu.manager;
 
-/** Pure connection policy so retry and exit behavior can be tested without Android hardware. */
+/** Pure connection policy so manual start and exit behavior can be tested without Android hardware. */
 public final class ConnectionPolicy {
     private ConnectionState state = ConnectionState.IDLE;
     private String mode;
-    private boolean startSuppressed;
 
     public ConnectionState state() {
         return state;
@@ -15,15 +14,11 @@ public final class ConnectionPolicy {
     }
 
     public boolean isManualStartAllowed() {
-        return !startSuppressed;
+        return true;
     }
 
     public void transportAvailable(String connectionMode) {
-        if (state == ConnectionState.EXITED && connectionMode != null && connectionMode.equals(mode)) {
-            return;
-        }
         mode = connectionMode;
-        startSuppressed = false;
         state = ConnectionState.IDLE;
     }
 
@@ -47,13 +42,11 @@ public final class ConnectionPolicy {
     }
 
     public void userExited() {
-        startSuppressed = true;
         state = ConnectionState.EXITED;
     }
 
     public void detached() {
         mode = null;
-        startSuppressed = false;
         state = ConnectionState.IDLE;
     }
 

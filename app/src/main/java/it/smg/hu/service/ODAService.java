@@ -9,6 +9,7 @@ import android.os.IBinder;
 import android.os.Looper;
 import android.view.SurfaceView;
 import android.widget.Toast;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import androidx.annotation.Keep;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
@@ -44,7 +45,8 @@ public class ODAService extends Service implements IAndroidAutoEntityEventHandle
 
     private LocalBroadcastManager localBroadcastManager_;
     private NotificationFactory notificationFactory_;
-    private AndroidAutoEntity androidAutoEntity_;
+    private volatile AndroidAutoEntity androidAutoEntity_;
+    private final Object entityLock_ = new Object();
 
     private  USBManager usbManager_;
     private  WIFIManager wifiManager_;
@@ -55,6 +57,7 @@ public class ODAService extends Service implements IAndroidAutoEntityEventHandle
 
     private volatile boolean isRunning_;
     private volatile boolean stopRequested_;
+    private final AtomicBoolean isStarting_ = new AtomicBoolean(false);
     private String currentMode_;
 
     public ODAService() {}
@@ -75,84 +78,87 @@ public class ODAService extends Service implements IAndroidAutoEntityEventHandle
     }
 
     public void startUsb(SurfaceView surfaceView, InputDevice.OnKeyHolder keyHolder){
-        if (isRunning_) {
+        if (isRunning_ || !isStarting_.compareAndSet(false, true)) {
             return;
         }
         currentMode_ = MODE_USB;
         stopRequested_ = false;
         ConnectionManager.instance().connecting(MODE_USB, "Connecting through USB");
         startThread_ = new Thread(() -> {
-            Looper.prepare();
-
-            if (usbManager_.aoapDevice() != null) {
-                if (Log.isVerbose()) Log.v(TAG, "aoap device available, start in usb mode");
-                try {
-                    LibUsbDevice device = usbManager_.aoapDevice();
-                    if (device.open()) {
-                        if (Log.isInfo()) Log.i(TAG, "device opened");
-                        androidAutoEntity_ = AndroidAutoEntityFactory.create(this, device, surfaceView, keyHolder);
-                        if (stopRequested_) {
-                            androidAutoEntity_.delete();
-                            androidAutoEntity_ = null;
-                            return;
-                        }
-                        androidAutoEntity_.start(this);
-                        isRunning_ = true;
-                        ConnectionManager.instance().active("Android Auto is connected through USB");
-                    } else {
-                        Log.e(TAG, "Error in open usb device");
-                        onAndroidAutoQuitOnError("USB OPEN DEVICE", -1);
-                        return;
-                    }
-                } catch (Exception e){
-                    Log.e(TAG, "error", e);
-                    onAndroidAutoQuitOnError("USB GENERIC ERROR", -1);
-//                    onAndroidAutoQuit();
-                    return;
-                }
-            } else {
-                ConnectionManager.instance().failed("Android Auto USB accessory is no longer available");
+            try {
+                startUsbInternal(surfaceView, keyHolder);
+            } finally {
+                isStarting_.set(false);
             }
-            if (Log.isInfo()) Log.i(TAG, "start usb thead completed");
         });
+        startThread_.setName("ODA-USB-start");
         startThread_.start();
     }
 
     public void startWifi(SurfaceView surfaceView, InputDevice.OnKeyHolder keyHolder){
-        if (isRunning_) {
+        if (isRunning_ || !isStarting_.compareAndSet(false, true)) {
             return;
         }
         currentMode_ = MODE_WIFI;
         stopRequested_ = false;
         ConnectionManager.instance().connecting(MODE_WIFI, "Connecting through phone hotspot");
         startThread_ = new Thread(() -> {
-            Looper.prepare();
-
             try {
-                String ipAddress = wifiManager_.getIpAddress();
-                if (ipAddress != null) {
-//                    if (Log.isInfo()) Log.i(TAG, "Connect to ip " + ipAddress);
-                    TCPEndpoint tcpEndpoint = new TCPEndpoint(ipAddress);
-                    androidAutoEntity_ = AndroidAutoEntityFactory.create(this, tcpEndpoint, surfaceView, keyHolder);
-                    if (stopRequested_) {
-                        androidAutoEntity_.delete();
-                        androidAutoEntity_ = null;
-                        return;
-                    }
-                    androidAutoEntity_.start(this);
-                    isRunning_ = true;
-                    ConnectionManager.instance().active("Android Auto is connected through Wi-Fi");
-                } else {
-                    ConnectionManager.instance().failed("Phone hotspot gateway is not ready");
-                }
-                if (Log.isInfo()) Log.i(TAG, "start wifi thead completed");
-            } catch (TCPConnectException e){
-                Log.e(TAG, "TCP Connection error", e);
-                ConnectionManager.instance().failed("Could not reach Android Auto on the phone hotspot");
-                stop();
+                startWifiInternal(surfaceView, keyHolder);
+            } finally {
+                isStarting_.set(false);
             }
         });
+        startThread_.setName("ODA-WiFi-start");
         startThread_.start();
+    }
+
+    private void startUsbInternal(SurfaceView surfaceView, InputDevice.OnKeyHolder keyHolder) {
+        LibUsbDevice device = usbManager_.aoapDevice();
+        if (device == null) {
+            ConnectionManager.instance().failed("USB accessory unavailable. Reconnect the cable.");
+            return;
+        }
+        try {
+            if (!device.open()) {
+                onAndroidAutoQuitOnError("USB OPEN DEVICE", -1);
+                return;
+            }
+            androidAutoEntity_ = AndroidAutoEntityFactory.create(this, device, surfaceView, keyHolder);
+            if (stopRequested_) {
+                cleanupEntity();
+                return;
+            }
+            androidAutoEntity_.start(this);
+            isRunning_ = true;
+            ConnectionManager.instance().active("Android Auto connected through USB");
+        } catch (Exception e) {
+            Log.e(TAG, "USB startup error", e);
+            onAndroidAutoQuitOnError("USB GENERIC ERROR", -1);
+        }
+    }
+
+    private void startWifiInternal(SurfaceView surfaceView, InputDevice.OnKeyHolder keyHolder) {
+        String ipAddress = wifiManager_.getIpAddress();
+        if (ipAddress == null) {
+            ConnectionManager.instance().failed("Phone hotspot gateway is not ready");
+            return;
+        }
+        try {
+            TCPEndpoint tcpEndpoint = new TCPEndpoint(ipAddress);
+            androidAutoEntity_ = AndroidAutoEntityFactory.create(this, tcpEndpoint, surfaceView, keyHolder);
+            if (stopRequested_) {
+                cleanupEntity();
+                return;
+            }
+            androidAutoEntity_.start(this);
+            isRunning_ = true;
+            ConnectionManager.instance().active("Android Auto connected through Wi-Fi");
+        } catch (TCPConnectException e) {
+            Log.e(TAG, "TCP connection error", e);
+            ConnectionManager.instance().failed("Wi-Fi endpoint unreachable at " + ipAddress + ":5277");
+            stop();
+        }
     }
 
     public void shutdown(){
@@ -190,14 +196,7 @@ public class ODAService extends Service implements IAndroidAutoEntityEventHandle
             HondaConnectManager.instance().endAudioBinding();
         }
 
-        if (androidAutoEntity_ != null) {
-            androidAutoEntity_.stop();
-        }
-
-        if (androidAutoEntity_ != null) {
-            androidAutoEntity_.delete();
-            androidAutoEntity_ = null;
-        }
+        cleanupEntity();
 
         startThread_ = null;
         currentMode_ = null;
@@ -216,6 +215,9 @@ public class ODAService extends Service implements IAndroidAutoEntityEventHandle
 
     public void onDestroy() {
         if (Log.isDebug()) Log.d(TAG, "onDestroy");
+        stopRequested_ = true;
+        isRunning_ = false;
+        cleanupEntity();
         super.onDestroy();
     }
 
@@ -232,14 +234,13 @@ public class ODAService extends Service implements IAndroidAutoEntityEventHandle
         Notification notification = notificationFactory_.create();
         startForeground(123456, notification);
 
-//        return START_NOT_STICKY;
-        return START_STICKY;
+        return START_NOT_STICKY;
     }
 
     @Keep
     @Override
     public void onAndroidAutoQuit() {
-        ConnectionManager.instance().detached("Android Auto session ended");
+        ConnectionManager.instance().detached(currentMode_, "Android Auto session ended");
         stop();
     }
 
@@ -247,10 +248,11 @@ public class ODAService extends Service implements IAndroidAutoEntityEventHandle
     @Override
     public void onAndroidAutoQuitOnError(String error, int nativeErrorCode){
         Log.e(TAG, "closing with error " + error + "(" + nativeErrorCode + ")");
-        ConnectionManager.instance().failed(error);
+        final String details = nativeErrorCode == -1 ? error : error + " (code " + nativeErrorCode + ")";
+        ConnectionManager.instance().failed(details);
 
         mainHandler_.post(() -> {
-            Toast.makeText(this, "Closed due to " + error + " error", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, details, Toast.LENGTH_LONG).show();
         });
 
         stop();
@@ -267,6 +269,26 @@ public class ODAService extends Service implements IAndroidAutoEntityEventHandle
     public class ServiceBinder extends Binder {
         public ODAService getService() {
             return ODAService.this;
+        }
+    }
+
+    private void cleanupEntity() {
+        synchronized (entityLock_) {
+            AndroidAutoEntity entity = androidAutoEntity_;
+            androidAutoEntity_ = null;
+            if (entity == null) {
+                return;
+            }
+            try {
+                entity.stop();
+            } catch (Throwable t) {
+                Log.e(TAG, "Error stopping Android Auto entity", t);
+            }
+            try {
+                entity.delete();
+            } catch (Throwable t) {
+                Log.e(TAG, "Error deleting Android Auto entity", t);
+            }
         }
     }
 

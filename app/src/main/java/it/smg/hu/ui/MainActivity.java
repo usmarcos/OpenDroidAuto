@@ -79,6 +79,7 @@ public class MainActivity extends FragmentActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        playerLaunchPending_ = PlayerActivity.isActive();
         registerConnectionReceivers();
         if (wifiManager_ != null) {
             wifiManager_.checkNetwork();

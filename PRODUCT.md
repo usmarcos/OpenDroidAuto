@@ -12,7 +12,7 @@ Drivers and installers using legacy Android ARM32 multimedia head units, primari
 
 ## Product Purpose
 
-OpenDroidAuto turns a legacy head unit into an Android Auto receiver through USB AOAP or a phone hotspot. Success is a reliable, low-distraction connection that starts without a manual Start action.
+OpenDroidAuto turns a legacy head unit into an Android Auto receiver through USB AOAP or a phone hotspot. Success is a reliable, low-distraction connection that starts manually only after the transport is ready.
 
 ## Positioning
 

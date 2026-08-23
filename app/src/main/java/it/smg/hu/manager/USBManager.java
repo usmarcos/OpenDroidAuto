@@ -130,15 +130,41 @@ public class USBManager {
         if (device == null || lastDevice_ == null || device.getDeviceId() == lastDevice_.getDeviceId()) {
             usbDevice_ = null;
             lastDevice_ = null;
-            ConnectionManager.instance().detached("USB device disconnected");
+            ConnectionManager.instance().detached("modeUSB", "USB device disconnected");
             localBroadcastManager_.sendBroadcast(new Intent(DETACH_AOAP_DEVICE));
         }
     }
 
-    public void retryLastDevice() {
-        if (lastDevice_ != null) {
-            handleUsbAttached(lastDevice_);
+    public synchronized boolean recoverConnection() {
+        if (Log.isInfo()) Log.i(TAG, "recoverConnection");
+        if (usbDevice_ != null) {
+            try {
+                usbDevice_.close();
+            } catch (Throwable t) {
+                Log.e(TAG, "Error closing stale USB device", t);
+            }
+            usbDevice_ = null;
         }
+
+        lastDevice_ = null;
+        UsbDevice fallbackDevice = null;
+        for (UsbDevice device : usbManager_.getDeviceList().values()) {
+            if (fallbackDevice == null) {
+                fallbackDevice = device;
+            }
+            if (checkAOAPDevice(device) && usbManager_.hasPermission(device)) {
+                lastDevice_ = device;
+                usbDevice_ = libUsb_.createDevice(device, usbManager_);
+                ConnectionManager.instance().transportAvailable("modeUSB", "USB connection recovered. Press Start.");
+                localBroadcastManager_.sendBroadcast(new Intent(ATTACH_AOAP_DEVICE));
+                return true;
+            }
+        }
+
+        if (fallbackDevice != null) {
+            handleUsbAttached(fallbackDevice);
+        }
+        return false;
     }
 
     public LibUsbDevice aoapDevice(){

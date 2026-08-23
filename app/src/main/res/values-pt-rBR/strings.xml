@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">OpenDroidAuto</string>
+    <string name="home_subtitle">Android Auto para multimídias legadas</string>
+    <string name="home_connection_status">Estado da conexão</string>
+    <string name="home_status_waiting">AGUARDANDO</string>
+    <string name="home_waiting_title">Conecte seu telefone</string>
+    <string name="home_waiting_detail">O botão Start aparece quando o USB ou Wi-Fi estiver pronto.</string>
+    <string name="home_usb_waiting">USB aguardando</string>
+    <string name="home_wifi_off">Wi-Fi desligado</string>
+    <string name="home_retry">TENTAR NOVAMENTE</string>
+    <string name="home_recover_usb">RECUPERAR USB</string>
+    <string name="home_start">INICIAR ANDROID AUTO</string>
+    <string name="home_status_permission">PERMISSÃO</string>
+    <string name="home_status_connecting">CONECTANDO</string>
+    <string name="home_status_connected">CONECTADO</string>
+    <string name="home_status_stopped">ENCERRADO</string>
+    <string name="home_status_error">VERIFIQUE A CONEXÃO</string>
+    <string name="home_permission_title">Aguardando permissão USB</string>
+    <string name="home_permission_detail">Autorize o acesso USB para preparar o Android Auto.</string>
+    <string name="home_connecting_title">Conectando ao Android Auto</string>
+    <string name="home_aoap_detail">Preparando o acessório USB. Mantenha o telefone conectado.</string>
+    <string name="home_connecting_detail">Iniciando a sessão do Android Auto.</string>
+    <string name="home_connected_title">Android Auto conectado</string>
+    <string name="home_connected_detail">A projeção está ativa.</string>
+    <string name="home_stopped_title">Sessão encerrada</string>
+    <string name="home_stopped_detail">Pressione Start para iniciar novamente quando o dispositivo estiver pronto.</string>
+    <string name="home_error_title">Falha na conexão</string>
+    <string name="home_error_detail">Confira o cabo ou hotspot e use a opção de recuperação.</string>
+    <string name="home_usb_ready">USB pronto</string>
+    <string name="home_wifi_waiting">Wi-Fi aguardando</string>
+    <string name="home_wifi_ready">Wi-Fi: %1$s</string>
+    <string name="settings">Configurações</string>
+    <string name="settings_back">VOLTAR</string>
+    <string name="settings_subtitle">Configure com o veículo parado</string>
+    <string name="car_settings">Veículo</string>
+    <string name="video_settings">Vídeo</string>
+    <string name="conn_settings">Conectividade</string>
+    <string name="keymap_settings">Comandos</string>
+    <string name="advanced_settings">Avançado</string>
+    <string name="exit">Sair</string>
+</resources>

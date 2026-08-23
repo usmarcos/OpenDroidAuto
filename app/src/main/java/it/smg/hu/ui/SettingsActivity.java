@@ -21,6 +21,10 @@ import it.smg.libs.common.Log;
 
 public class SettingsActivity extends FragmentActivity implements InputDevice.OnKeyHolder {
     private static final String TAG = "SettingsActivity";
+    private static final int[] NAVIGATION_IDS = {
+            R.id.car_settings, R.id.video_settings, R.id.conn_settings,
+            R.id.keymap_settings, R.id.advanced_settings
+    };
     private View.OnKeyListener keyListener_;
 
     @Override
@@ -29,19 +33,24 @@ public class SettingsActivity extends FragmentActivity implements InputDevice.On
         setContentView(R.layout.activity_settings);
 
         findViewById(R.id.settingsBackBtn).setOnClickListener(v -> onBackPressed());
-        findViewById(R.id.car_settings).setOnClickListener(v -> showSettings(new CarFragment(), R.string.car_settings));
-        findViewById(R.id.video_settings).setOnClickListener(v -> showSettings(new VideoFragment(), R.string.video_settings));
-        findViewById(R.id.conn_settings).setOnClickListener(v -> showSettings(new ConnectivityFragment(), R.string.conn_settings));
-        findViewById(R.id.keymap_settings).setOnClickListener(v -> showSettings(new KeymapFragment(), R.string.keymap_settings));
-        findViewById(R.id.advanced_settings).setOnClickListener(v -> showSettings(new AdvancedFragment(), R.string.advanced_settings));
+        findViewById(R.id.car_settings).setOnClickListener(v -> showSettings(new CarFragment(), R.string.car_settings, R.id.car_settings));
+        findViewById(R.id.video_settings).setOnClickListener(v -> showSettings(new VideoFragment(), R.string.video_settings, R.id.video_settings));
+        findViewById(R.id.conn_settings).setOnClickListener(v -> showSettings(new ConnectivityFragment(), R.string.conn_settings, R.id.conn_settings));
+        findViewById(R.id.keymap_settings).setOnClickListener(v -> showSettings(new KeymapFragment(), R.string.keymap_settings, R.id.keymap_settings));
+        findViewById(R.id.advanced_settings).setOnClickListener(v -> showSettings(new AdvancedFragment(), R.string.advanced_settings, R.id.advanced_settings));
 
         if (savedInstanceState == null) {
-            showSettings(new CarFragment(), R.string.car_settings);
+            showSettings(new CarFragment(), R.string.car_settings, R.id.car_settings);
         }
     }
 
-    private void showSettings(Fragment fragment, int titleResource) {
+    private void showSettings(Fragment fragment, int titleResource, int selectedNavigationId) {
         ((TextView) findViewById(R.id.settingsTitle)).setText(titleResource);
+        for (int id : NAVIGATION_IDS) {
+            findViewById(id).setBackgroundResource(id == selectedNavigationId
+                    ? R.drawable.button_primary : R.drawable.button_secondary);
+        }
+        findViewById(R.id.settingsScroll).scrollTo(0, 0);
         getSupportFragmentManager().beginTransaction()
                 .replace(R.id.main_content, fragment)
                 .commit();

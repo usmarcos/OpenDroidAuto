@@ -20,4 +20,8 @@
     <color name="oda_success">#147A61</color>
     <color name="oda_error">#A84242</color>
     <color name="settings_surface">#F4F7FA</color>
+    <color name="settings_input">#FFFFFF</color>
+    <color name="settings_outline">#A9B6C5</color>
+    <color name="settings_text_primary">#17212B</color>
+    <color name="settings_text_secondary">#526476</color>
 </resources>

@@ -115,7 +115,7 @@ public class WIFIManager {
 
             Intent disconnectWifiIntent = new Intent(DISCONNECT_WIFI);
             localBroadcastManager_.sendBroadcast(disconnectWifiIntent);
-            ConnectionManager.instance().detached("Phone hotspot disconnected");
+            ConnectionManager.instance().detached("modeWifi", "Phone hotspot disconnected");
         }
     }
 }

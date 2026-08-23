@@ -84,6 +84,13 @@ public final class ConnectionManager {
         publish(message);
     }
 
+    public void detached(String mode, String message) {
+        if (mode != null && policy_.mode() != null && !mode.equals(policy_.mode())) {
+            return;
+        }
+        detached(message);
+    }
+
     public void failed(String message) {
         policy_.failed();
         publish(message);

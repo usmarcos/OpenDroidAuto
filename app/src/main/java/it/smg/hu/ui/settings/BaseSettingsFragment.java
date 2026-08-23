@@ -9,6 +9,8 @@ import android.widget.ArrayAdapter;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.Spinner;
+import android.widget.TextView;
+import android.view.ViewGroup;
 
 import androidx.fragment.app.Fragment;
 
@@ -22,6 +24,42 @@ public abstract class BaseSettingsFragment extends Fragment {
     protected Settings settings;
 
     protected abstract String tag();
+
+    @Override
+    public void onViewCreated(View view, android.os.Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        view.setBackgroundColor(getResources().getColor(R.color.settings_surface));
+        styleControls(view);
+    }
+
+    private void styleControls(View view) {
+        if (view instanceof ViewGroup && !(view instanceof Spinner)) {
+            ViewGroup group = (ViewGroup) view;
+            for (int i = 0; i < group.getChildCount(); i++) {
+                styleControls(group.getChildAt(i));
+            }
+            return;
+        }
+        if (view instanceof EditText) {
+            EditText field = (EditText) view;
+            field.setTextColor(getResources().getColor(R.color.settings_text_primary));
+            field.setHintTextColor(getResources().getColor(R.color.settings_text_secondary));
+            field.setBackgroundResource(R.drawable.settings_input_light);
+            field.setMinHeight(dp(48));
+        } else if (view instanceof CheckBox) {
+            ((CheckBox) view).setTextColor(getResources().getColor(R.color.settings_text_primary));
+            view.setMinimumHeight(dp(48));
+        } else if (view instanceof Spinner) {
+            view.setBackgroundResource(R.drawable.settings_spinner_light);
+            view.setMinimumHeight(dp(48));
+        } else if (view instanceof TextView) {
+            ((TextView) view).setTextColor(getResources().getColor(R.color.settings_text_primary));
+        }
+    }
+
+    private int dp(int value) {
+        return Math.round(value * getResources().getDisplayMetrics().density);
+    }
 
     protected void initEditText(EditText editText, Settings.Base base, String settingsKey, String defaultValue){
         initEditText(editText, base, settingsKey, defaultValue, null);

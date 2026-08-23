@@ -6,7 +6,9 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="horizontal"
     android:background="#F1F1F1"
-    android:layout_marginBottom="64dp">
+    android:layout_marginBottom="16dp"
+    android:paddingLeft="8dp"
+    android:paddingRight="8dp">
 
     <RelativeLayout
         android:layout_width="446dp"

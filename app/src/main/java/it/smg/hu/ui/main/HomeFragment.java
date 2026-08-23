@@ -82,7 +82,8 @@ public class HomeFragment extends Fragment {
         retryButton_.setOnClickListener(v -> retryConnection());
 
         renderWifiAvailability();
-        renderState(ConnectionManager.instance().state(), null, ConnectionManager.instance().mode());
+        renderState(ConnectionManager.instance().state(), ConnectionManager.instance().lastMessage(),
+                ConnectionManager.instance().mode());
         return view;
     }
 
@@ -117,11 +118,14 @@ public class HomeFragment extends Fragment {
 
     private void retryConnection() {
         String mode = ConnectionManager.instance().mode();
-        if (mode != null && (!ODAService.MODE_USB.equals(mode)
+        if (renderedState_ == ConnectionState.ERROR && ODAService.MODE_USB.equals(mode)
+                && usbManager_ != null) {
+            if (usbManager_.recoverConnection()) {
+                ((MainActivity) requireActivity()).startConnectionManually(ODAService.MODE_USB);
+            }
+        } else if (mode != null && (!ODAService.MODE_USB.equals(mode)
                 || (usbManager_ != null && usbManager_.aoapDevice() != null))) {
             ((MainActivity) requireActivity()).startConnectionManually(mode);
-        } else if (ODAService.MODE_USB.equals(mode) && usbManager_ != null) {
-            usbManager_.retryLastDevice();
         }
     }
 
@@ -138,10 +142,11 @@ public class HomeFragment extends Fragment {
         boolean manualStartAvailable = state != ConnectionState.ERROR && mode != null
                 && ConnectionManager.instance().isManualStartAllowed();
         retryButton_.setVisibility(state == ConnectionState.ERROR || manualStartAvailable ? View.VISIBLE : View.GONE);
-        retryButton_.setText(state == ConnectionState.ERROR ? R.string.home_retry : R.string.home_start);
-        String detail = message;
+        retryButton_.setText(state == ConnectionState.ERROR && ODAService.MODE_USB.equals(mode)
+                ? R.string.home_recover_usb : (state == ConnectionState.ERROR ? R.string.home_retry : R.string.home_start));
+        String detail = state == ConnectionState.ERROR ? message : null;
         int badge = R.drawable.status_badge_idle;
-        int icon = R.drawable.usb_dis;
+        int icon = ODAService.MODE_WIFI.equals(mode) ? R.drawable.wifi_dis : R.drawable.usb_dis;
 
         switch (state) {
             case PERMISSION_PENDING:
@@ -161,7 +166,7 @@ public class HomeFragment extends Fragment {
                 break;
             case ACTIVE:
                 badge = R.drawable.status_badge_active;
-                icon = R.drawable.usb;
+                icon = ODAService.MODE_WIFI.equals(mode) ? R.drawable.wifi : R.drawable.usb;
                 statusBadge_.setText(R.string.home_status_connected);
                 statusTitle_.setText(R.string.home_connected_title);
                 detail = fallback(detail, R.string.home_connected_detail);

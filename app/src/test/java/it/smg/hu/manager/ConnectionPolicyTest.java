@@ -1,7 +1,6 @@
 package it.smg.hu.manager;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
@@ -18,13 +17,17 @@ public class ConnectionPolicyTest {
     }
 
     @Test
-    public void userExitSuppressesRetriesUntilDetach() {
+    public void userExitKeepsManualRestartAvailable() {
         ConnectionPolicy policy = new ConnectionPolicy();
         policy.transportAvailable("modeUSB");
         policy.userExited();
 
-        assertFalse(policy.isManualStartAllowed());
+        assertTrue(policy.isManualStartAllowed());
         policy.failed();
+
+        policy.userExited();
+        assertTrue(policy.isManualStartAllowed());
+        assertEquals(ConnectionState.EXITED, policy.state());
 
         policy.detached();
         assertTrue(policy.isManualStartAllowed());
