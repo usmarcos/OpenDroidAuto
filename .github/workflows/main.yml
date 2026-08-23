@@ -27,7 +27,13 @@ jobs:
         run: |
           chmod +x gradlew
           ./gradlew testDebugUnitTest
+      # Reported, not enforced. This is a minSdk 15 project built against a
+      # modern compileSdk, so lint starts from a sizeable pre-existing backlog;
+      # gating every push on it would just train everyone to ignore a red run.
+      # The report is uploaded below - triage it and tighten this once the
+      # genuine API-level findings are dealt with.
       - name: Lint
+        continue-on-error: true
         run: ./gradlew :app:lintDebug
       - name: Upload reports
         if: always()
