@@ -1,5 +1,7 @@
 package it.smg.libs.aasdk;
 
+import android.content.Context;
+
 import androidx.annotation.Keep;
 
 import it.smg.libs.common.ILog;
