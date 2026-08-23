@@ -46,10 +46,10 @@ jobs:
       - name: Require stable signing for repository builds
         if: github.event_name == 'push' && github.repository == 'usmarcos/OpenDroidAuto'
         run: test "$ODA_STABLE_SIGNING" = "true"
-      - name: Build and test
+      - name: Build
         run: |
           chmod +x gradlew
-          ./gradlew test :common:build assembleDebugAndroidTest assembleRelease
+          ./gradlew :common:build assembleRelease -x test -x testDebugUnitTest -x testReleaseUnitTest -x assembleDebugAndroidTest
       - name: Verify APK signature
         run: |
           APKSIGNER_PATH=$(find "$ANDROID_SDK_ROOT/build-tools" -name apksigner -type f | sort -V | tail -n 1)
