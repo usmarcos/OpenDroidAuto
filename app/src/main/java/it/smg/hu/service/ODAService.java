@@ -130,6 +130,9 @@ public class ODAService extends Service implements IAndroidAutoEntityEventHandle
                 return;
             }
             androidAutoEntity_.start(this);
+            if (stopRequested_ || androidAutoEntity_ == null) {
+                return;
+            }
             isRunning_ = true;
             ConnectionManager.instance().active("Android Auto connected through USB");
         } catch (Exception e) {
@@ -152,6 +155,9 @@ public class ODAService extends Service implements IAndroidAutoEntityEventHandle
                 return;
             }
             androidAutoEntity_.start(this);
+            if (stopRequested_ || androidAutoEntity_ == null) {
+                return;
+            }
             isRunning_ = true;
             ConnectionManager.instance().active("Android Auto connected through Wi-Fi");
         } catch (TCPConnectException e) {

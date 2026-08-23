@@ -9,7 +9,6 @@ import android.view.SurfaceView;
 import androidx.annotation.Keep;
 import androidx.annotation.RequiresApi;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import it.smg.libs.common.Log;
@@ -62,7 +61,11 @@ public class NativeVideoOutput extends VideoOutput implements Runnable {
             codec_.start();
             codecThread_.start();
             return true;
-        } catch (IOException e) {
+        } catch (Exception e) {
+            Log.e(TAG, "Unable to initialize video decoder", e);
+            running_ = false;
+            configured_ = false;
+            releaseCodec();
             return false;
         }
     }
@@ -71,19 +74,28 @@ public class NativeVideoOutput extends VideoOutput implements Runnable {
     @Override
     public void write(long timestamp, ByteBuffer buf) {
         if (configured_ && running_) {
-            int index = codec_.dequeueInputBuffer(3000000);
+            MediaCodec codec = codec_;
+            if (codec == null) {
+                return;
+            }
+            int index = codec.dequeueInputBuffer(20000);
             if (index >= 0) {
                 ByteBuffer buffer;
                 if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
-                    buffer = codec_.getInputBuffers()[index];
-                    buffer.clear();
+                    buffer = codec.getInputBuffers()[index];
                 } else {
-                    buffer = codec_.getInputBuffer(index);
+                    buffer = codec.getInputBuffer(index);
                 }
                 if (buffer != null) {
+                    int size = buf.remaining();
+                    buffer.clear();
+                    if (size > buffer.remaining()) {
+                        Log.e(TAG, "Video frame is larger than the codec input buffer: " + size);
+                        codec.queueInputBuffer(index, 0, 0, timestamp, 0);
+                        return;
+                    }
                     buffer.put(buf);
-                    buffer.flip();
-                    codec_.queueInputBuffer(index, 0, buf.limit(), timestamp, 0);
+                    codec.queueInputBuffer(index, 0, size, timestamp, 0);
                 }
             }
         }
@@ -93,44 +105,57 @@ public class NativeVideoOutput extends VideoOutput implements Runnable {
     @Override
     public void stop() {
         if (Log.isInfo()) Log.i(TAG, "shutdown");
-        if (running_) {
-            running_ = false;
-            configured_ = false;
-            try {
-                if (codecThread_ != null) {
-                    codecThread_.join(1000);
-                }
-            } catch (InterruptedException ignored) {}
-
-            codec_.flush();
-            codec_.stop();
-            codec_.release();
-            codec_ = null;
-
+        running_ = false;
+        configured_ = false;
+        try {
+            if (codecThread_ != null) {
+                codecThread_.interrupt();
+                codecThread_.join(1000);
+                codecThread_ = null;
+            }
+        } catch (InterruptedException ignored) {
+            Thread.currentThread().interrupt();
         }
+        releaseCodec();
     }
 
     @Override
     public void run() {
         MediaCodec.BufferInfo info = new MediaCodec.BufferInfo();
         while (running_) {
-            if (configured_) {
-                int index = codec_.dequeueOutputBuffer(info, 10000);
+            MediaCodec codec = codec_;
+            if (configured_ && codec != null) {
+                int index = codec.dequeueOutputBuffer(info, 10000);
                 if (index >= 0) {
                     if (Log.isVerbose()) Log.v(TAG, "outputBufferIndex: " + index);
                     ByteBuffer buffer = null;
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                        buffer = codec_.getOutputBuffer(index);
+                        buffer = codec.getOutputBuffer(index);
                     } else {
-                        buffer = codec_.getOutputBuffers()[index];
+                        buffer = codec.getOutputBuffers()[index];
                     }
                     if (Log.isVerbose()) Log.v(TAG, "outputBuffer: " + buffer);
 
                     // setting true is telling system to render frame onto Surface
-                    codec_.releaseOutputBuffer(index, true);
+                    codec.releaseOutputBuffer(index, true);
                 }
             }
         }
         if (Log.isVerbose()) Log.v(TAG, "thread closed");
+    }
+
+    private void releaseCodec() {
+        MediaCodec codec = codec_;
+        codec_ = null;
+        if (codec == null) {
+            return;
+        }
+        try {
+            codec.flush();
+        } catch (IllegalStateException ignored) {}
+        try {
+            codec.stop();
+        } catch (IllegalStateException ignored) {}
+        codec.release();
     }
 }
