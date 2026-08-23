@@ -5,8 +5,9 @@ import android.media.AudioManager;
 import android.media.AudioTrack;
 
 import java.nio.ByteBuffer;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import it.smg.libs.common.Log;
@@ -22,7 +23,7 @@ public class AudioCodec implements IAudioCodec, Runnable {
     private final int sampleSize_;
     protected AtomicBoolean running_;
 
-    private final Queue<byte[]> queue_;
+    private final BlockingQueue<byte[]> queue_;
     private Thread codecThread_;
 
     public AudioCodec(String name, int streamType, int sampleRate, int channelConfig, int sampleSize){
@@ -33,7 +34,7 @@ public class AudioCodec implements IAudioCodec, Runnable {
         sampleSize_ = sampleSize;
         running_ = new AtomicBoolean(false);
 
-        queue_ = new ConcurrentLinkedQueue<>();
+        queue_ = new ArrayBlockingQueue<>(32);
     }
 
     private static int channels2num(int channels){
@@ -67,22 +68,30 @@ public class AudioCodec implements IAudioCodec, Runnable {
     @Override
     public void write(ByteBuffer buffer, long timestamp) {
         if (Log.isVerbose()) Log.v(TAG, "buffer size: " + buffer.limit());
-        final int size = buffer.limit();
+        ByteBuffer source = buffer.slice();
+        final int size = source.remaining();
+        if (size <= 0) {
+            return;
+        }
         final byte[] data = new byte[size];
-        buffer.get(data);
+        source.get(data);
 
-        queue_.add(data);
+        if (!queue_.offer(data)) {
+            queue_.poll();
+            queue_.offer(data);
+        }
     }
 
     @Override
     public void start() {
         if (Log.isInfo()) Log.i(TAG, "Start");
 
+        if (running_.getAndSet(true)) {
+            return;
+        }
         codecThread_ = new Thread(this);
         codecThread_.setName(name_);
         codecThread_.start();
-
-        running_.set(true);
     }
 
     @Override
@@ -93,7 +102,7 @@ public class AudioCodec implements IAudioCodec, Runnable {
 
             if (codecThread_ != null){
                 try {
-                    codecThread_.join();
+                    codecThread_.join(1000);
                     if (Log.isDebug()) Log.d(TAG + "_" + codecThread_.getName(), "thread joined");
                 } catch (InterruptedException ignored) {}
                 codecThread_ = null;
@@ -113,6 +122,11 @@ public class AudioCodec implements IAudioCodec, Runnable {
         if (audioTrack_ == null) {
             try {
                 int bufferSize_ = AudioTrack.getMinBufferSize(sampleRate_, channels2num(channelConfig_), sampleSizeFromInt(sampleSize_));
+                if (bufferSize_ <= 0) {
+                    Log.e(TAG, "Invalid AudioTrack buffer size " + bufferSize_);
+                    running_.set(false);
+                    return;
+                }
                 if (Log.isInfo()) Log.i(TAG, "Buffer size " + bufferSize_ + "*2");
                 audioTrack_ = new AudioTrack(streamType_, sampleRate_, channels2num(channelConfig_), sampleSizeFromInt(sampleSize_), bufferSize_ * 3, AudioTrack.MODE_STREAM);
             } catch (Exception e) {
@@ -130,7 +144,12 @@ public class AudioCodec implements IAudioCodec, Runnable {
 
         if (Log.isVerbose()) Log.v(TAG + "_" + codecThread_.getName(), "running thread");
         while (running_.get()) {
-            byte[] data = queue_.poll();
+            byte[] data = null;
+            try {
+                data = queue_.poll(50, TimeUnit.MILLISECONDS);
+            } catch (InterruptedException ignored) {
+                Thread.currentThread().interrupt();
+            }
             if (data != null){
                 audioTrack_.write(data, 0, data.length);
             }

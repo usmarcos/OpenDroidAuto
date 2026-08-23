@@ -10,6 +10,7 @@ import androidx.annotation.Keep;
 
 import it.smg.libs.common.ILog;
 import it.smg.libs.aasdk.configuration.ICarConfiguration;
+import it.smg.hu.manager.HondaPlatform;
 
 //import it.smg.hu.oda.service.input.KeyCode;
 //import it.smg.hu.oda.service.sensor.IDayNightSensor;
@@ -562,7 +563,8 @@ public class Settings {
         }
 
         public boolean hondaIntegrationEnabled(){
-            return SP.getBoolean(ADVANCED_ENABLE_HONDA_INTEGRATION, ADVANCED_ENABLE_HONDA_INTEGRATION_DEFAULT_VALUE);
+            return SP.getBoolean(ADVANCED_ENABLE_HONDA_INTEGRATION, ADVANCED_ENABLE_HONDA_INTEGRATION_DEFAULT_VALUE)
+                    && HondaPlatform.isAvailable();
         }
 
         public void hondaIntegrationEnabled(boolean integration){

@@ -13,6 +13,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 
 import it.smg.libs.common.Log;
+import it.smg.hu.config.Settings;
 
 public class WIFIManager {
 
@@ -57,6 +58,9 @@ public class WIFIManager {
     private String ipAddress(){
         WifiManager wifi = (WifiManager) ctx_.getSystemService(Context.WIFI_SERVICE);
         DhcpInfo d = wifi.getDhcpInfo();
+        if (d == null || d.gateway == 0) {
+            return null;
+        }
 
         byte[] addressBytes = {(byte) (0xff & d.gateway),
                 (byte) (0xff & (d.gateway >> 8)),
@@ -73,20 +77,28 @@ public class WIFIManager {
     private boolean isConnected(){
         ConnectivityManager connManager = (ConnectivityManager) ctx_.getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo wifi = connManager.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
-        return wifi.isConnected();
+        return wifi != null && wifi.isConnected();
     }
 
     public void checkNetwork(){
         synchronized (this) {
+            if (!Settings.instance().advanced.enableWiFi()) {
+                return;
+            }
 
             boolean isConnected = isConnected();
             String networkSSID_;
             if (isConnected) {
                 ipAddress_ = ipAddress();
                 networkSSID_ = networkSSID();
+                if (ipAddress_ == null) {
+                    ConnectionManager.instance().failed("Phone hotspot has no gateway yet");
+                    return;
+                }
                 if (Log.isDebug()) Log.d(TAG, "Network with ip: " + ipAddress_);
                 if (Log.isDebug()) Log.d(TAG, "Network with SSID: " + networkSSID_);
 
+                ConnectionManager.instance().transportAvailable("modeWifi", "Phone hotspot ready: " + networkSSID_);
                 Intent connectWifiIntent = new Intent(CONNECT_WIFI);
                 connectWifiIntent.putExtra(EXTRA_SSID, networkSSID_);
                 localBroadcastManager_.sendBroadcast(connectWifiIntent);
@@ -103,6 +115,7 @@ public class WIFIManager {
 
             Intent disconnectWifiIntent = new Intent(DISCONNECT_WIFI);
             localBroadcastManager_.sendBroadcast(disconnectWifiIntent);
+            ConnectionManager.instance().detached("Phone hotspot disconnected");
         }
     }
 }

@@ -20,8 +20,8 @@ public class NativeVideoOutput extends VideoOutput implements Runnable {
     private static final String TAG = "NativeVideoOutput";
 
     private MediaCodec codec_;
-    private boolean configured_;
-    private boolean running_;
+    private volatile boolean configured_;
+    private volatile boolean running_;
     private Thread codecThread_;
 
     public NativeVideoOutput(SurfaceView surfaceView){
@@ -58,9 +58,9 @@ public class NativeVideoOutput extends VideoOutput implements Runnable {
             format.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, 655360);
             codec_.configure(format, surface, null, 0);
             configured_ = true;
+            running_ = true;
             codec_.start();
             codecThread_.start();
-            running_ = true;
             return true;
         } catch (IOException e) {
             return false;
@@ -97,7 +97,9 @@ public class NativeVideoOutput extends VideoOutput implements Runnable {
             running_ = false;
             configured_ = false;
             try {
-                codecThread_.join();
+                if (codecThread_ != null) {
+                    codecThread_.join(1000);
+                }
             } catch (InterruptedException ignored) {}
 
             codec_.flush();
@@ -113,7 +115,7 @@ public class NativeVideoOutput extends VideoOutput implements Runnable {
         MediaCodec.BufferInfo info = new MediaCodec.BufferInfo();
         while (running_) {
             if (configured_) {
-                int index = codec_.dequeueOutputBuffer(info, 0);
+                int index = codec_.dequeueOutputBuffer(info, 10000);
                 if (index >= 0) {
                     if (Log.isVerbose()) Log.v(TAG, "outputBufferIndex: " + index);
                     ByteBuffer buffer = null;

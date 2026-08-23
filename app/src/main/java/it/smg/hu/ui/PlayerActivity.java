@@ -21,6 +21,7 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import it.smg.hu.R;
 import it.smg.hu.config.Settings;
 import it.smg.hu.manager.HondaConnectManager;
+import it.smg.hu.manager.ConnectionManager;
 import it.smg.hu.projection.InputDevice;
 import it.smg.hu.service.ODAService;
 import it.smg.hu.ui.notification.AppBadge;
@@ -56,7 +57,7 @@ public class PlayerActivity extends Activity implements ServiceConnection, Surfa
             isRunning_ = savedInstanceState.getBoolean("isRunning");
         } else {
             Bundle b = getIntent().getExtras();
-            startMode_ = b.getString("mode");
+            startMode_ = b == null ? null : b.getString("mode");
         }
 
         if (Log.isDebug()) Log.d(TAG, "start mode: " + startMode_);
@@ -92,12 +93,7 @@ public class PlayerActivity extends Activity implements ServiceConnection, Surfa
     @Override
     public void onBackPressed() {
         if (Log.isDebug()) Log.d(TAG, "onBackPressed");
-
-        if (Settings.instance().advanced.hondaIntegrationEnabled()){
-            HondaConnectManager.instance().endAudioBinding();
-        }
-
-        odaService_.stop();
+        exitSession();
     }
 
     @Override
@@ -105,11 +101,7 @@ public class PlayerActivity extends Activity implements ServiceConnection, Surfa
         if (keyCode == KeyEvent.KEYCODE_BACK) {
             if (Log.isInfo()) Log.i(TAG, "Back button long pressed");
 
-            if (Settings.instance().advanced.hondaIntegrationEnabled()){
-                HondaConnectManager.instance().endAudioBinding();
-            }
-
-            odaService_.stop();
+            exitSession();
             return true;
         }
         return super.onKeyLongPress(keyCode, event);
@@ -139,7 +131,9 @@ public class PlayerActivity extends Activity implements ServiceConnection, Surfa
     protected void onPause() {
         if (Log.isDebug()) Log.d(TAG, "onPause");
         super.onPause();
-        odaService_.releaseFocus();
+        if (odaService_ != null) {
+            odaService_.releaseFocus();
+        }
 
         if (isServiceBound_) {
             unbindService(this);
@@ -151,7 +145,10 @@ public class PlayerActivity extends Activity implements ServiceConnection, Surfa
 
         AppBadge.instance().show();
 
-        localBroadcastManager_.unregisterReceiver(localReceiver_);
+        if (localReceiver_ != null) {
+            localBroadcastManager_.unregisterReceiver(localReceiver_);
+            localReceiver_ = null;
+        }
         isActive_ = false;
     }
 
@@ -207,7 +204,9 @@ public class PlayerActivity extends Activity implements ServiceConnection, Surfa
     @Override
     public void surfaceDestroyed(SurfaceHolder holder) {
         Log.d(TAG, "surfaceDestroyed");
-        odaService_.releaseFocus();
+        if (odaService_ != null) {
+            odaService_.releaseFocus();
+        }
     }
 
     @Override
@@ -229,6 +228,12 @@ public class PlayerActivity extends Activity implements ServiceConnection, Surfa
 
         if (Settings.instance().advanced.hondaIntegrationEnabled()){
             HondaConnectManager.instance().adjustPermission();
+        }
+
+        if (startMode_ == null) {
+            ConnectionManager.instance().failed("No connection mode was provided");
+            finish();
+            return;
         }
 
         switch (startMode_){
@@ -275,5 +280,14 @@ public class PlayerActivity extends Activity implements ServiceConnection, Surfa
 
     public static boolean isActive(){
         return isActive_;
+    }
+
+    private void exitSession() {
+        ConnectionManager.instance().userExited("Android Auto stopped. Reconnect the cable to start again.");
+        if (odaService_ != null) {
+            odaService_.stop();
+        } else {
+            finish();
+        }
     }
 }

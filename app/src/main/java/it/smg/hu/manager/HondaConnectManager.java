@@ -115,7 +115,7 @@ public class HondaConnectManager {
 
                 registerSteeringMenuCallback();
 
-                if (pControl_.authType != Constants.AUTH_TYPE_PREINSTALL){
+                if (!isPreinstall()){
                     notifySteeringMenuDispMode(1);
                 }
 
@@ -171,7 +171,7 @@ public class HondaConnectManager {
     }
 
     public int mediaAudioStream(ChannelId audioChannel){
-        if (pControl_.authType == Constants.AUTH_TYPE_PREINSTALL){
+        if (isPreinstall()){
             switch (audioChannel) {
                 case SPEECH_AUDIO:
                 case SYSTEM_AUDIO:
@@ -197,11 +197,11 @@ public class HondaConnectManager {
     }
 
     public void requestAudioFocus(){
-        if (Log.isDebug()) Log.d(TAG, "requestAudioFocus -> app with auth " + pControl_.authType);
+        if (Log.isDebug()) Log.d(TAG, "requestAudioFocus -> app with auth " + authType());
         if (Log.isVerbose()) Log.v(TAG, "requestAudioFocus modeMgr audio hasAudioFocus= " + hasAudioFocus_);
 
         // If AUTH_TYPE <> preinstall the app has already audio focus
-        if (pControl_.authType == Constants.AUTH_TYPE_PREINSTALL && !hasAudioFocus_) {
+        if (isPreinstall() && modeMgrManager_ != null && !hasAudioFocus_) {
             int idx = settings_.advanced.modeMgrAudioIdx();
             int ret;
 
@@ -233,11 +233,11 @@ public class HondaConnectManager {
     }
 
     public void releaseAudioFocus(){
-        if (Log.isDebug()) Log.d(TAG, "releaseAudioFocus -> app with auth " + pControl_.authType);
+        if (Log.isDebug()) Log.d(TAG, "releaseAudioFocus -> app with auth " + authType());
         if (Log.isVerbose()) Log.v(TAG, "releaseAudioFocus modeMgr audio hasAudioFocus= " + hasAudioFocus_);
 
         // If AUTH_TYPE <> preinstall the app has already audio focus
-        if (pControl_.authType == Constants.AUTH_TYPE_PREINSTALL && hasAudioFocus_) {
+        if (isPreinstall() && modeMgrManager_ != null && hasAudioFocus_) {
             int idx = settings_.advanced.modeMgrAudioIdx();
             int ret;
 
@@ -263,17 +263,17 @@ public class HondaConnectManager {
 
     public void increaseVolume(){
         if (Log.isVerbose()) Log.v(TAG, "increaseVolume");
-        modeMgrManager_.reqModeMgrSteeringVolCmd(true);
+        if (modeMgrManager_ != null) modeMgrManager_.reqModeMgrSteeringVolCmd(true);
     }
 
     public void decreaseVolume(){
         if (Log.isVerbose()) Log.v(TAG, "decreaseVolume");
-        modeMgrManager_.reqModeMgrSteeringVolCmd(false);
+        if (modeMgrManager_ != null) modeMgrManager_.reqModeMgrSteeringVolCmd(false);
     }
 
     // Used in onCreate
     public void initialize(){
-        if (Log.isDebug()) Log.d(TAG, "initialize -> app with auth " + pControl_.authType);
+        if (Log.isDebug()) Log.d(TAG, "initialize -> app with auth " + authType());
 
         bindToEcNcService();
         bindToWheelService();
@@ -282,9 +282,9 @@ public class HondaConnectManager {
 
     // Used in onResume
     public void initAudioBinding(){
-        if (Log.isDebug()) Log.d(TAG, "initAudioBinding -> app with auth " + pControl_.authType);
+        if (Log.isDebug()) Log.d(TAG, "initAudioBinding -> app with auth " + authType());
         // if app has THIRD_PARTY auth will have exclusive audio focus, only bind wheel service
-        if (pControl_.authType == Constants.AUTH_TYPE_PREINSTALL){
+        if (isPreinstall()){
             if (Log.isVerbose()) Log.v(TAG, "initAudioBinding -> app auth = preinstall -> register ModeMgr and SW callback");
 
             registerModeMgrCallback();
@@ -304,18 +304,18 @@ public class HondaConnectManager {
 
     // Used in onPause (app in background)
     public void sendToBackground(){
-        if (Log.isDebug()) Log.d(TAG, "sendToBackground -> app with auth " + pControl_.authType + " unregister SW callback");
+        if (Log.isDebug()) Log.d(TAG, "sendToBackground -> app with auth " + authType() + " unregister SW callback");
        unregisterSteeringMenuCallback();
        notifySteeringMenuDispMode(0);
     }
 
     public void endAudioBinding(){
-        if (Log.isDebug()) Log.d(TAG, "endAudioBinding -> app with auth " + pControl_.authType);
+        if (Log.isDebug()) Log.d(TAG, "endAudioBinding -> app with auth " + authType());
 
         stopMicSession();
         unbindFromEcNcService();
 
-        if (pControl_.authType == Constants.AUTH_TYPE_PREINSTALL){
+        if (isPreinstall()){
             if (Log.isDebug()) Log.d(TAG, "endAudioBinding -> auth PREINSTALL -> release audio and unregister modemgr callback");
             releaseAudioFocus();
             unregisterModeMgrCallback();
@@ -481,6 +481,9 @@ public class HondaConnectManager {
 
         int idx = settings_.advanced.modeMgrAudioIdx();
         if (Log.isVerbose()) Log.v(TAG, "unregisterModeMgrCallback idx " + idx);
+        if (modeMgrManager_ == null) {
+            return;
+        }
         int ret = modeMgrManager_.unregisterModeMgrCallback(idx);
         if (Log.isVerbose()) Log.v(TAG, "unregisterModeMgrCallback ret " + ret);
 
@@ -498,6 +501,14 @@ public class HondaConnectManager {
         } else {
             Log.w(TAG, "modeMgrManager_ null -> do nothing");
         }
+    }
+
+    private boolean isPreinstall() {
+        return pControl_ != null && pControl_.authType == Constants.AUTH_TYPE_PREINSTALL;
+    }
+
+    private String authType() {
+        return pControl_ == null ? "unavailable" : String.valueOf(pControl_.authType);
     }
 
 //    private boolean waitForCond(int timeout){

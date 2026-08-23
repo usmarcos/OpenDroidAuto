@@ -23,6 +23,8 @@ public class USBManager {
 
     private static final int USB_PID_ACC         = 0x2D00;      // Accessory                  100
     private static final int USB_PID_ACC_ADB     = 0x2D01;      // Accessory + ADB            110
+    private static final int USB_PID_ACC_AUDIO   = 0x2D04;      // Accessory + Audio
+    private static final int USB_PID_ACC_AUDIO_ADB = 0x2D05;    // Accessory + Audio + ADB
     private static final int USB_VID_GOO         = 0x18D1;
 
     private static final int ACC_REQ_GET_PROTOCOL = 51;
@@ -45,6 +47,7 @@ public class USBManager {
     private final Context ctx_;
     private final UsbManager usbManager_;
     private LibUsbDevice usbDevice_;
+    private UsbDevice lastDevice_;
     private final LocalBroadcastManager localBroadcastManager_;
 
     private static USBManager instance_;
@@ -64,10 +67,21 @@ public class USBManager {
         localBroadcastManager_ = LocalBroadcastManager.getInstance(ctx_);
         LibUsb.init();
         libUsb_ = LibUsb.instance();
+        ConnectionManager.init(ctx_);
     }
 
     public boolean checkDevice(UsbDevice device){
-        if (Log.isInfo()) Log.i(TAG, "checkDevice");
+        handleUsbAttached(device);
+        return checkAOAPDevice(device);
+    }
+
+    public void handleUsbAttached(UsbDevice device){
+        if (device == null) {
+            return;
+        }
+        if (Log.isInfo()) Log.i(TAG, "handleUsbAttached " + device);
+        lastDevice_ = device;
+        ConnectionManager.instance().transportAvailable("modeUSB", "USB device detected");
 
         boolean deviceHasPermission = usbManager_.hasPermission(device);
         if (Log.isInfo()) Log.i(TAG, "deviceHasPermission " + deviceHasPermission);
@@ -75,24 +89,56 @@ public class USBManager {
             if (Log.isDebug()) Log.d(TAG, "Request permission");
             Intent i = new Intent(ACTION_USB_PERMISSION);
             PendingIntent permissionIntent = PendingIntent.getBroadcast(ctx_, 0, i, PendingIntent.FLAG_ONE_SHOT);
+            ConnectionManager.instance().permissionPending("Waiting for USB permission");
             usbManager_.requestPermission(device, permissionIntent);
+            return;
         }
 
         boolean isAoap = checkAOAPDevice(device);
         if (!isAoap) {
             if (Log.isInfo()) Log.i(TAG, "Request aoap");
-            requestAOAP(device);
+            if (requestAOAP(device)) {
+                ConnectionManager.instance().switchingToAoap("Preparing Android Auto USB accessory");
+            } else {
+                ConnectionManager.instance().failed("Could not switch USB device to Android Auto mode");
+            }
         } else {
             if (Log.isDebug()) Log.d(TAG, "Device is aoap");
             usbDevice_ = libUsb_.createDevice(device, usbManager_);
+            ConnectionManager.instance().transportAvailable("modeUSB", "Android Auto USB accessory ready");
 
             if (Log.isDebug()) Log.d(TAG, "send local broadcast ATTACH_AOAP_DEVICE");
             Intent aoapDeviceIntent = new Intent(ATTACH_AOAP_DEVICE);
             aoapDeviceIntent.putExtra(UsbManager.EXTRA_DEVICE, device);
             localBroadcastManager_.sendBroadcast(aoapDeviceIntent);
         }
+    }
 
-        return isAoap;
+    public void onUsbPermissionResult(UsbDevice device, boolean granted) {
+        if (device == null) {
+            ConnectionManager.instance().failed("USB permission result did not include a device");
+            return;
+        }
+        if (!granted) {
+            ConnectionManager.instance().failed("USB permission was denied");
+            return;
+        }
+        handleUsbAttached(device);
+    }
+
+    public void onUsbDetached(UsbDevice device) {
+        if (device == null || lastDevice_ == null || device.getDeviceId() == lastDevice_.getDeviceId()) {
+            usbDevice_ = null;
+            lastDevice_ = null;
+            ConnectionManager.instance().detached("USB device disconnected");
+            localBroadcastManager_.sendBroadcast(new Intent(DETACH_AOAP_DEVICE));
+        }
+    }
+
+    public void retryLastDevice() {
+        if (lastDevice_ != null) {
+            handleUsbAttached(lastDevice_);
+        }
     }
 
     public LibUsbDevice aoapDevice(){
@@ -100,7 +146,7 @@ public class USBManager {
     }
 
     private boolean checkAOAPDevice(UsbDevice device){
-        if (device.getVendorId() == USB_VID_GOO && (device.getProductId() == USB_PID_ACC || device.getProductId() == USB_PID_ACC_ADB)) {
+        if (device.getVendorId() == USB_VID_GOO && (device.getProductId() == USB_PID_ACC || device.getProductId() == USB_PID_ACC_ADB || device.getProductId() == USB_PID_ACC_AUDIO || device.getProductId() == USB_PID_ACC_AUDIO_ADB)) {
             if (Log.isInfo()) Log.i(TAG, "Found aop device");
             return true;
         }
@@ -176,7 +222,7 @@ public class USBManager {
 
                 if (Log.isDebug()) Log.d(TAG, "Send Version " + VERSION);
                 buffer = (VERSION + "\0").getBytes();
-                len = usbConnection.controlTransfer(UsbConstants.USB_DIR_OUT | UsbConstants.USB_TYPE_VENDOR, ACC_REQ_SEND_STRING, 0, 0, buffer, buffer.length, 10000);
+                len = usbConnection.controlTransfer(UsbConstants.USB_DIR_OUT | UsbConstants.USB_TYPE_VENDOR, ACC_REQ_SEND_STRING, 0, 3, buffer, buffer.length, 10000);
                 if (len != buffer.length) {
                     Log.e(TAG, "Error sending Version, len= " + len + " expected= " + buffer.length);
                     return false;
@@ -184,7 +230,7 @@ public class USBManager {
 
                 if (Log.isDebug()) Log.d(TAG, "Send URI " + URI);
                 buffer = (URI + "\0").getBytes();
-                len = usbConnection.controlTransfer(UsbConstants.USB_DIR_OUT | UsbConstants.USB_TYPE_VENDOR, ACC_REQ_SEND_STRING, 0, 0, buffer, buffer.length, 10000);
+                len = usbConnection.controlTransfer(UsbConstants.USB_DIR_OUT | UsbConstants.USB_TYPE_VENDOR, ACC_REQ_SEND_STRING, 0, 4, buffer, buffer.length, 10000);
                 if (len != buffer.length) {
                     Log.e(TAG, "Error sending Manufacter, len= " + len + " expected= " + buffer.length);
                     return false;
@@ -192,7 +238,7 @@ public class USBManager {
 
                 if (Log.isDebug()) Log.d(TAG, "Send Serial " + SERIAL);
                 buffer = (SERIAL + "\0").getBytes();
-                len = usbConnection.controlTransfer(UsbConstants.USB_DIR_OUT | UsbConstants.USB_TYPE_VENDOR, ACC_REQ_SEND_STRING, 0, 0, buffer, buffer.length, 10000);
+                len = usbConnection.controlTransfer(UsbConstants.USB_DIR_OUT | UsbConstants.USB_TYPE_VENDOR, ACC_REQ_SEND_STRING, 0, 5, buffer, buffer.length, 10000);
                 if (len != buffer.length) {
                     Log.e(TAG, "Error sending Serial, len= " + len + " expected= " + buffer.length);
                     return false;

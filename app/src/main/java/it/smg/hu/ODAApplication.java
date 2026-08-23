@@ -7,6 +7,8 @@ import androidx.multidex.MultiDexApplication;
 import it.smg.hu.config.ODALog;
 import it.smg.hu.config.Settings;
 import it.smg.hu.manager.HondaConnectManager;
+import it.smg.hu.manager.HondaPlatform;
+import it.smg.hu.manager.ConnectionManager;
 import it.smg.hu.manager.USBManager;
 import it.smg.hu.manager.WIFIManager;
 
@@ -51,6 +53,8 @@ public class ODAApplication extends MultiDexApplication {
 
 //        if (Log.isDebug()) Log.d(TAG, "Initialized jni: " + Runtime.handle());
 
+        HondaPlatform.init(getApplicationContext());
+        ConnectionManager.init(getApplicationContext());
         USBManager.init(getApplicationContext());
         WIFIManager.init(getApplicationContext());
         AppBadge.init(getApplicationContext());

@@ -40,6 +40,18 @@ android {
         }
     }
 
+    signingConfigs {
+        release {
+            def storePath = System.getenv("ODA_RELEASE_STORE_FILE")
+            if (storePath != null && !storePath.trim().isEmpty()) {
+                storeFile file(storePath)
+                storePassword System.getenv("ODA_RELEASE_STORE_PASSWORD")
+                keyAlias System.getenv("ODA_RELEASE_KEY_ALIAS")
+                keyPassword System.getenv("ODA_RELEASE_KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         debug {
             packagingOptions {
@@ -50,7 +62,7 @@ android {
         }
 
         release {
-            signingConfig debug.signingConfig
+            signingConfig signingConfigs.release.storeFile != null ? signingConfigs.release : signingConfigs.debug
             minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
 
