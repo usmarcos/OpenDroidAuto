@@ -18,7 +18,7 @@
 	<string name="home_permission_title">Waiting for USB permission</string>
 	<string name="home_permission_detail">Allow USB access to prepare Android Auto.</string>
 	<string name="home_connecting_title">Connecting Android Auto</string>
-	<string name="home_aoap_detail">Preparing the USB accessory. Keep the phone connected.</string>
+	<string name="home_aoap_detail">Preparing USB automatically. Keep the cable connected while recovery runs.</string>
 	<string name="home_connecting_detail">Starting the Android Auto session.</string>
 	<string name="home_connected_title">Android Auto connected</string>
 	<string name="home_connected_detail">Android Auto projection is active.</string>
@@ -121,6 +121,7 @@
 	<string name="settings">Settings</string>
 	<string name="settings_back">BACK</string>
 	<string name="settings_subtitle">Configure while the vehicle is parked</string>
+	<string name="settings_invalid_number">Enter a valid whole number</string>
 	<string name="exit">Exit</string>
 	<string name="start">Start WiFi</string>
 	<string name="start_usb">Start</string>

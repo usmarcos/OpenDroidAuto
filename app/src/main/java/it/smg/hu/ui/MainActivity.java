@@ -81,6 +81,9 @@ public class MainActivity extends FragmentActivity {
         super.onResume();
         playerLaunchPending_ = PlayerActivity.isActive();
         registerConnectionReceivers();
+        if (usbManager_ != null) {
+            usbManager_.rescanAttachedDevices();
+        }
         if (wifiManager_ != null) {
             wifiManager_.checkNetwork();
         }

@@ -77,7 +77,14 @@ public abstract class BaseSettingsFragment extends Fragment {
 
         editText.setOnEditorActionListener((v, actionId, event) -> {
             if (actionId == EditorInfo.IME_ACTION_DONE){
-                base.set(settingsKey, Integer.parseInt(v.getText().toString()));
+                String rawValue = v.getText().toString().trim();
+                try {
+                    base.set(settingsKey, Integer.parseInt(rawValue));
+                    v.setError(null);
+                } catch (NumberFormatException error) {
+                    v.setError(getString(R.string.settings_invalid_number));
+                    return true;
+                }
 
                 InputMethodManager imm = (InputMethodManager) v.getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
                 imm.hideSoftInputFromWindow(v.getWindowToken(), 0);

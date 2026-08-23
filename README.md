@@ -2,6 +2,8 @@
 
 Android Auto receiver for legacy Android ARM32 head units, including Honda Connect units and compatible generic multimedia systems.
 
+Current hotfix version: **2.6.1**.
+
 ## Connection behavior
 
 - USB is the primary path. When the phone reaches AOAP mode, use **START ANDROID AUTO** on the dashboard to begin the session.
@@ -10,6 +12,8 @@ Android Auto receiver for legacy Android ARM32 head units, including Honda Conne
 - Wi-Fi is optional. Enable it in settings only after the phone hotspot is already saved by Android on the head unit. The app uses the hotspot gateway on TCP port 5277 and reports failures for manual recovery.
 - The dashboard and Settings support a persistent light/dark selector. A fresh installation starts in light mode; Portuguese multimedia systems use Portuguese interface text and every other locale falls back to English.
 - Android controls USB permission. A non-rooted head unit can still show the system dialog on a first connection or after a device is disconnected; the app does not bypass that permission.
+- Version 2.6.1 introduces a stable release certificate. Uninstall the older debug-signed APK once before installing 2.6.1; future stable-signed updates can then preserve the app identity and USB default association.
+- Stable release certificate SHA-256: `DD:F4:9D:72:6D:DB:B5:A7:FF:5F:EA:21:9D:AA:27:66:69:94:E2:F3:37:F7:E3:38:EE:CD:F9:C4:AB:B7:3C:B6`.
 
 ## Compatibility
 
@@ -39,6 +43,7 @@ ODA_RELEASE_KEY_PASSWORD
 ```
 
 Without them, the legacy debug-signing behavior is retained for local installation.
+GitHub Actions decodes `ODA_RELEASE_KEYSTORE_BASE64` and supplies the other three signing values from repository secrets. Keep an offline backup of the release keystore and password; losing them prevents future in-place APK updates.
 
 ## Diagnostics
 

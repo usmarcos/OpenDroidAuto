@@ -41,33 +41,38 @@ public class OMXVideoCodec {
         fps_ = fps;
     }
 
-    public void setSurface(Surface surface, int width, int height){
+    public synchronized void setSurface(Surface surface, int width, int height){
         surfaceView_ = surface;
         width_ = width;
         height_ = height;
-        nativeSurfaceInit (surface, height_, width_);
+        nativeSurfaceInit(surface, width_, height_);
     }
 
-    public boolean init() {
+    public synchronized boolean init() {
         return nativeDecoderInit(fps_);
     }
 
-    public void shutdown() {
+    public synchronized void shutdown() {
+        if (handle_ == 0) {
+            return;
+        }
         nativeDelete();
         if (Log.isVerbose()) Log.v(TAG, "Native deleted");
         handle_ = 0;
     }
 
-    public void mediaDecode(long timestamp, ByteBuffer buf, int len) {
+    public synchronized void mediaDecode(long timestamp, ByteBuffer buf, int len) {
+        if (handle_ == 0 || buf == null || len <= 0) {
+            return;
+        }
         if (Log.isVerbose()) Log.v(TAG, "mediaDecode");
-        if (isSps(buf)) {
+        if (isSps(buf, len)) {
             nativeSetSps(buf, len);
         }
         nativeConsume(buf, len, timestamp);
     }
 
-    private boolean isSps(ByteBuffer buf) {
-        boolean sps = (buf.get(4) & 0x1f ) == 7;
-        return sps;
+    private boolean isSps(ByteBuffer buf, int len) {
+        return len > 4 && buf.limit() > 4 && (buf.get(4) & 0x1f) == 7;
     }
 }

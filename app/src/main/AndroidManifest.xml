@@ -3,7 +3,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-feature android:name="android.hardware.usb.host" android:required="false"/>
-    <uses-feature android:name="android.hardware.usb.accessory" android:required="true" />
+    <uses-feature android:name="android.hardware.usb.accessory" android:required="false" />
     <uses-feature android:name="android.hardware.location.gps" android:required="false"/>
 
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
@@ -30,23 +30,26 @@
 
     <application android:label="OpenDroidAuto"
         android:name=".ODAApplication"
+        android:allowBackup="false"
         android:icon="@drawable/logo"
         android:hardwareAccelerated="true"
         android:theme="@style/Theme.AppCompat">
 
-        <activity android:name=".ui.MainActivity" android:screenOrientation="landscape" android:theme="@style/AppTheme" android:launchMode="singleTask">
+        <activity android:name=".ui.MainActivity" android:screenOrientation="landscape" android:theme="@style/AppTheme" android:launchMode="singleTask" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <intent-filter>
                 <action android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED" />
             </intent-filter>
             <meta-data android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED" android:resource="@xml/usb_device_filter" />
         </activity>
 
-        <activity android:name=".ui.SettingsActivity" android:label="Settings" android:screenOrientation="landscape">
+        <activity android:name=".ui.SettingsActivity" android:label="Settings" android:screenOrientation="landscape" android:exported="false">
         </activity>
 
-        <activity android:name=".ui.PlayerActivity"  android:screenOrientation="landscape" android:launchMode="singleTask"> <!--android:excludeFromRecents="true" android:noHistory="true"-->
+        <activity android:name=".ui.PlayerActivity"  android:screenOrientation="landscape" android:launchMode="singleTask" android:exported="false"> <!--android:excludeFromRecents="true" android:noHistory="true"-->
         </activity>
 
         <service android:enabled="true" android:name=".service.ODAService" android:exported="false">

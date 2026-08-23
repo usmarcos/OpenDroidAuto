@@ -19,7 +19,7 @@
     <string name="home_permission_title">Aguardando permissão USB</string>
     <string name="home_permission_detail">Autorize o acesso USB para preparar o Android Auto.</string>
     <string name="home_connecting_title">Conectando ao Android Auto</string>
-    <string name="home_aoap_detail">Preparando o acessório USB. Mantenha o telefone conectado.</string>
+    <string name="home_aoap_detail">Preparando o USB automaticamente. Mantenha o cabo conectado durante a recuperação.</string>
     <string name="home_connecting_detail">Iniciando a sessão do Android Auto.</string>
     <string name="home_connected_title">Android Auto conectado</string>
     <string name="home_connected_detail">A projeção está ativa.</string>
@@ -59,6 +59,7 @@
     <string name="settings">Configurações</string>
     <string name="settings_back">VOLTAR</string>
     <string name="settings_subtitle">Configure com o veículo parado</string>
+    <string name="settings_invalid_number">Digite um número inteiro válido</string>
     <string name="car_settings">Veículo</string>
     <string name="video_settings">Vídeo</string>
     <string name="conn_settings">Conectividade</string>

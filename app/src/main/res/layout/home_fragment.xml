@@ -135,6 +135,7 @@
 
         <Button
             android:id="@+id/retryBtn"
+            style="@style/AutomotiveButton"
             android:layout_width="wrap_content"
             android:layout_height="52dp"
             android:layout_marginTop="20dp"
@@ -156,6 +157,7 @@
 
         <Button
             android:id="@+id/settingsBtn"
+            style="@style/AutomotiveButton"
             android:layout_width="160dp"
             android:layout_height="52dp"
             android:background="@drawable/button_secondary_light"
@@ -165,6 +167,7 @@
 
         <Button
             android:id="@+id/themeBtn"
+            style="@style/AutomotiveButton"
             android:layout_width="168dp"
             android:layout_height="52dp"
             android:layout_marginLeft="12dp"
@@ -175,6 +178,7 @@
 
         <Button
             android:id="@+id/exitBtn"
+            style="@style/AutomotiveButton"
             android:layout_width="160dp"
             android:layout_height="52dp"
             android:layout_marginLeft="12dp"

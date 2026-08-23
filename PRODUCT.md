@@ -26,6 +26,8 @@ The interface is used in a landscape car display, often at 800x480, while the ve
 
 - Keep Android 4.x, `armeabi-v7a`, target SDK 15, and NDK 17.2 compatibility.
 - USB starts manually from the dashboard after Android grants device access; Android system permissions cannot be bypassed without privileged installation.
+- USB preparation runs asynchronously with bounded retries and an AOAP re-enumeration watchdog; it must never block the Android 4.x UI thread.
+- Release APKs use one stable certificate so updates preserve package identity and the Android USB default association.
 - Start in a high-contrast light theme and persist the driver-selected light or dark appearance across restarts.
 - Use Portuguese resources for any Portuguese system locale and English as the fallback for every other language.
 - Wi-Fi uses a hotspot already saved by the Android system; Wi-Fi Direct and in-app password provisioning are out of scope.

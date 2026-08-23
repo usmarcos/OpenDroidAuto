@@ -18,6 +18,7 @@
 
         <Button
             android:id="@+id/settingsBackBtn"
+            style="@style/AutomotiveButton"
             android:layout_width="92dp"
             android:layout_height="48dp"
             android:background="@drawable/button_secondary_light"
@@ -52,6 +53,7 @@
 
         <Button
             android:id="@+id/settingsThemeBtn"
+            style="@style/AutomotiveButton"
             android:layout_width="132dp"
             android:layout_height="48dp"
             android:background="@drawable/button_secondary_light"

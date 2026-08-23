@@ -32,66 +32,66 @@ public final class ConnectionManager {
         return instance_;
     }
 
-    public ConnectionState state() {
+    public synchronized ConnectionState state() {
         return policy_.state();
     }
 
-    public String mode() {
+    public synchronized String mode() {
         return policy_.mode();
     }
 
-    public boolean isManualStartAllowed() {
+    public synchronized boolean isManualStartAllowed() {
         return policy_.isManualStartAllowed();
     }
 
-    public String lastMessage() {
+    public synchronized String lastMessage() {
         return lastMessage_;
     }
 
 
-    public void transportAvailable(String mode, String message) {
+    public synchronized void transportAvailable(String mode, String message) {
         policy_.transportAvailable(mode);
         publish(message);
     }
 
-    public void permissionPending(String message) {
+    public synchronized void permissionPending(String message) {
         policy_.permissionPending();
         publish(message);
     }
 
-    public void switchingToAoap(String message) {
+    public synchronized void switchingToAoap(String message) {
         policy_.switchingToAoap();
         publish(message);
     }
 
-    public void connecting(String mode, String message) {
+    public synchronized void connecting(String mode, String message) {
         policy_.connecting(mode);
         publish(message);
     }
 
-    public void active(String message) {
+    public synchronized void active(String message) {
         policy_.active();
         publish(message);
     }
 
-    public void userExited(String message) {
+    public synchronized void userExited(String message) {
         policy_.userExited();
         publish(message);
     }
 
-    public void detached(String message) {
+    public synchronized void detached(String message) {
         policy_.detached();
         publish(message);
     }
 
-    public void detached(String mode, String message) {
+    public synchronized void detached(String mode, String message) {
         if (mode != null && policy_.mode() != null && !mode.equals(policy_.mode())) {
             return;
         }
         detached(message);
     }
 
-    public void failed(String message) {
+    public synchronized void failed(String message) {
         policy_.failed();
         publish(message);
     }

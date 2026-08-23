@@ -42,8 +42,9 @@ public class PlayerActivity extends Activity implements ServiceConnection, Surfa
     private String startMode_;
     private boolean isRunning_ = false;
     private boolean isServiceBound_ = false;
+    private boolean surfaceReady_ = false;
 
-    private static boolean isActive_;
+    private static volatile boolean isActive_;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -67,11 +68,13 @@ public class PlayerActivity extends Activity implements ServiceConnection, Surfa
 
         setContentView(R.layout.activity_player);
 
-        if (Settings.instance().advanced.hondaIntegrationEnabled()){
-            HondaConnectManager.instance().initialize();
+        HondaConnectManager hondaManager = hondaManager();
+        if (hondaManager != null){
+            hondaManager.initialize();
         }
 
         surfaceView_ = findViewById(R.id.surfaceView);
+        surfaceView_.getHolder().addCallback(this);
     }
 
     @Override
@@ -112,19 +115,21 @@ public class PlayerActivity extends Activity implements ServiceConnection, Surfa
         super.onResume();
         if (Log.isDebug()) Log.d(TAG, "onResume");
 
+        initReceivers();
+        isActive_ = true;
+
         Intent odaServiceIntent = new Intent(this, ODAService.class);
         startService(odaServiceIntent);
         bindService(odaServiceIntent, this, BIND_AUTO_CREATE | BIND_ABOVE_CLIENT | BIND_IMPORTANT);
 
-        if (Settings.instance().advanced.hondaIntegrationEnabled()){
-            HondaConnectManager.instance().initAudioBinding();
+        HondaConnectManager hondaManager = hondaManager();
+        if (hondaManager != null){
+            hondaManager.initAudioBinding();
         }
 
         NotificationFactory.instance().dismissAll();
         AppBadge.instance().dismiss();
 
-        initReceivers();
-        isActive_ = true;
     }
 
     @Override
@@ -137,10 +142,13 @@ public class PlayerActivity extends Activity implements ServiceConnection, Surfa
 
         if (isServiceBound_) {
             unbindService(this);
+            isServiceBound_ = false;
+            odaService_ = null;
         }
 
-        if (Settings.instance().advanced.hondaIntegrationEnabled()){
-            HondaConnectManager.instance().sendToBackground();
+        HondaConnectManager hondaManager = hondaManager();
+        if (hondaManager != null){
+            hondaManager.sendToBackground();
         }
 
         AppBadge.instance().show();
@@ -182,11 +190,17 @@ public class PlayerActivity extends Activity implements ServiceConnection, Surfa
 
     @Override
     protected void onDestroy() {
-        super.onDestroy();
+        if (surfaceView_ != null) {
+            surfaceView_.getHolder().removeCallback(this);
+        }
         if (Log.isDebug()) Log.d(TAG, "onDestroy");
+        super.onDestroy();
     }
 
     private void initReceivers(){
+        if (localReceiver_ != null) {
+            return;
+        }
         if (Log.isDebug()) Log.d(TAG, "Registering LocalReceiver");
         IntentFilter localFilter = new IntentFilter();
         localFilter.addAction(ODAService.STOP_ACTION);
@@ -196,14 +210,22 @@ public class PlayerActivity extends Activity implements ServiceConnection, Surfa
     }
 
     @Override
-    public void surfaceCreated(SurfaceHolder holder) {}
+    public void surfaceCreated(SurfaceHolder holder) {
+        surfaceReady_ = holder.getSurface() != null && holder.getSurface().isValid();
+        startWhenReady();
+    }
 
     @Override
-    public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {}
+    public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+        surfaceReady_ = width > 0 && height > 0 && holder.getSurface() != null
+                && holder.getSurface().isValid();
+        startWhenReady();
+    }
 
     @Override
     public void surfaceDestroyed(SurfaceHolder holder) {
         Log.d(TAG, "surfaceDestroyed");
+        surfaceReady_ = false;
         if (odaService_ != null) {
             odaService_.releaseFocus();
         }
@@ -217,17 +239,14 @@ public class PlayerActivity extends Activity implements ServiceConnection, Surfa
 
         isServiceBound_ = true;
 
-        if (isRunning_){
-            odaService_.gainFocus();
-        } else {
-            start();
-        }
+        startWhenReady();
     }
 
     private void start(){
 
-        if (Settings.instance().advanced.hondaIntegrationEnabled()){
-            HondaConnectManager.instance().adjustPermission();
+        HondaConnectManager hondaManager = hondaManager();
+        if (hondaManager != null){
+            hondaManager.adjustPermission();
         }
 
         if (startMode_ == null) {
@@ -251,6 +270,17 @@ public class PlayerActivity extends Activity implements ServiceConnection, Surfa
         isRunning_ = true;
     }
 
+    private void startWhenReady() {
+        if (odaService_ == null || !surfaceReady_) {
+            return;
+        }
+        if (isRunning_) {
+            odaService_.gainFocus();
+        } else {
+            start();
+        }
+    }
+
     @Override
     public void onServiceDisconnected(ComponentName name) {
         if (Log.isDebug()) Log.d(TAG, "onServiceDisconnected");
@@ -270,6 +300,7 @@ public class PlayerActivity extends Activity implements ServiceConnection, Surfa
         public void onReceive(Context context, Intent intent) {
             if (Log.isDebug()) Log.d(TAG, "received action " + intent.getAction());
             if (ODAService.STOP_ACTION.equalsIgnoreCase(intent.getAction())){
+                isRunning_ = false;
                 finish();
 
             } else if (ODAService.STOP_VIDEO_INDICATION.equalsIgnoreCase(intent.getAction())){
@@ -289,5 +320,12 @@ public class PlayerActivity extends Activity implements ServiceConnection, Surfa
         } else {
             finish();
         }
+    }
+
+    private HondaConnectManager hondaManager() {
+        if (!Settings.instance().advanced.hondaIntegrationEnabled()) {
+            return null;
+        }
+        return HondaConnectManager.instance();
     }
 }

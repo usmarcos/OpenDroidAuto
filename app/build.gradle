@@ -43,11 +43,17 @@ android {
     signingConfigs {
         release {
             def storePath = System.getenv("ODA_RELEASE_STORE_FILE")
-            if (storePath != null && !storePath.trim().isEmpty()) {
+            def storePasswordValue = System.getenv("ODA_RELEASE_STORE_PASSWORD")
+            def keyAliasValue = System.getenv("ODA_RELEASE_KEY_ALIAS")
+            def keyPasswordValue = System.getenv("ODA_RELEASE_KEY_PASSWORD")
+            if (storePath != null && !storePath.trim().isEmpty()
+                    && storePasswordValue != null && !storePasswordValue.trim().isEmpty()
+                    && keyAliasValue != null && !keyAliasValue.trim().isEmpty()
+                    && keyPasswordValue != null && !keyPasswordValue.trim().isEmpty()) {
                 storeFile file(storePath)
-                storePassword System.getenv("ODA_RELEASE_STORE_PASSWORD")
-                keyAlias System.getenv("ODA_RELEASE_KEY_ALIAS")
-                keyPassword System.getenv("ODA_RELEASE_KEY_PASSWORD")
+                storePassword storePasswordValue
+                keyAlias keyAliasValue
+                keyPassword keyPasswordValue
             }
         }
     }

@@ -24,10 +24,40 @@ jobs:
         run: echo "y" | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --install "ndk;17.2.4988734" --sdk_root=${ANDROID_SDK_ROOT}
       - name: Install legacy NDK dependency
         run: sudo apt-get update && sudo apt-get install -y libtinfo5
+      - name: Configure stable release signing
+        env:
+          ODA_RELEASE_KEYSTORE_BASE64: ${{ secrets.ODA_RELEASE_KEYSTORE_BASE64 }}
+          ODA_RELEASE_STORE_PASSWORD_SECRET: ${{ secrets.ODA_RELEASE_STORE_PASSWORD }}
+          ODA_RELEASE_KEY_ALIAS_SECRET: ${{ secrets.ODA_RELEASE_KEY_ALIAS }}
+          ODA_RELEASE_KEY_PASSWORD_SECRET: ${{ secrets.ODA_RELEASE_KEY_PASSWORD }}
+        run: |
+          if [ -n "$ODA_RELEASE_KEYSTORE_BASE64" ] && [ -n "$ODA_RELEASE_STORE_PASSWORD_SECRET" ] && [ -n "$ODA_RELEASE_KEY_ALIAS_SECRET" ] && [ -n "$ODA_RELEASE_KEY_PASSWORD_SECRET" ]; then
+            KEYSTORE_PATH="$RUNNER_TEMP/opendroidauto-release.jks"
+            printf '%s' "$ODA_RELEASE_KEYSTORE_BASE64" | base64 --decode > "$KEYSTORE_PATH"
+            echo "ODA_RELEASE_STORE_FILE=$KEYSTORE_PATH" >> "$GITHUB_ENV"
+            echo "ODA_RELEASE_STORE_PASSWORD=$ODA_RELEASE_STORE_PASSWORD_SECRET" >> "$GITHUB_ENV"
+            echo "ODA_RELEASE_KEY_ALIAS=$ODA_RELEASE_KEY_ALIAS_SECRET" >> "$GITHUB_ENV"
+            echo "ODA_RELEASE_KEY_PASSWORD=$ODA_RELEASE_KEY_PASSWORD_SECRET" >> "$GITHUB_ENV"
+            echo "ODA_STABLE_SIGNING=true" >> "$GITHUB_ENV"
+          else
+            echo "Stable release signing secrets are unavailable; this run will use debug signing."
+            echo "ODA_STABLE_SIGNING=false" >> "$GITHUB_ENV"
+          fi
+      - name: Require stable signing for repository builds
+        if: github.event_name == 'push' && github.repository == 'usmarcos/OpenDroidAuto'
+        run: test "$ODA_STABLE_SIGNING" = "true"
       - name: Build and test
         run: |
           chmod +x gradlew
           ./gradlew test :common:build assembleDebugAndroidTest assembleRelease
+      - name: Verify APK signature
+        run: |
+          APKSIGNER_PATH=$(find "$ANDROID_SDK_ROOT/build-tools" -name apksigner -type f | sort -V | tail -n 1)
+          CERT_OUTPUT=$("$APKSIGNER_PATH" verify --verbose --print-certs app/build/outputs/apk/release/HondaAppCenter_A1.apk)
+          printf '%s\n' "$CERT_OUTPUT"
+          if [ "$ODA_STABLE_SIGNING" = "true" ]; then
+            printf '%s' "$CERT_OUTPUT" | tr '[:upper:]' '[:lower:]' | grep -F "ddf49d726ddbb5a7ff5fea219daa27666994e2f337f7e338eecdf9c4abb73cb6"
+          fi
       - name: Upload release APK
         uses: actions/upload-artifact@v4
         with:

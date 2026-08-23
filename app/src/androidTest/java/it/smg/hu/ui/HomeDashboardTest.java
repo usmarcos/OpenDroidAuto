@@ -53,10 +53,20 @@ public class HomeDashboardTest {
 
     @Test
     public void settingsKeepsTheAutomotiveShellAndThemeSelectorVisible() {
+        PreferenceManager.getDefaultSharedPreferences(
+                InstrumentationRegistry.getInstrumentation().getTargetContext())
+                .edit().remove("darkTheme").commit();
         try (ActivityScenario<SettingsActivity> ignored = ActivityScenario.launch(SettingsActivity.class)) {
             onView(withId(R.id.settingsTitle)).check(matches(isDisplayed()));
             onView(withId(R.id.settingsThemeBtn)).check(matches(isDisplayed()));
             onView(withId(R.id.settingsNav)).check(matches(isDisplayed()));
+            onView(withId(R.id.settingsThemeBtn)).perform(click());
+            onView(withId(R.id.settingsThemeBtn)).check(matches(withText(R.string.theme_dark)));
+            onView(withId(R.id.main_content)).check(matches(isDisplayed()));
+        } finally {
+            PreferenceManager.getDefaultSharedPreferences(
+                    InstrumentationRegistry.getInstrumentation().getTargetContext())
+                    .edit().remove("darkTheme").commit();
         }
     }
 }

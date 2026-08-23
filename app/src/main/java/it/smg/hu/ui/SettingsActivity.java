@@ -39,9 +39,13 @@ public class SettingsActivity extends FragmentActivity implements InputDevice.On
 
         findViewById(R.id.settingsBackBtn).setOnClickListener(v -> onBackPressed());
         findViewById(R.id.settingsThemeBtn).setOnClickListener(v -> {
+            v.setEnabled(false);
             Settings settings = Settings.instance();
             settings.appearance.darkTheme(!settings.appearance.darkTheme());
-            recreate();
+            applyTheme();
+            showSettings(fragmentForNavigation(selectedNavigationId_),
+                    titleForNavigation(selectedNavigationId_), selectedNavigationId_);
+            v.postDelayed(() -> v.setEnabled(true), 350);
         });
         findViewById(R.id.car_settings).setOnClickListener(v -> showSettings(new CarFragment(), R.string.car_settings, R.id.car_settings));
         findViewById(R.id.video_settings).setOnClickListener(v -> showSettings(new VideoFragment(), R.string.video_settings, R.id.video_settings));
@@ -117,6 +121,14 @@ public class SettingsActivity extends FragmentActivity implements InputDevice.On
         if (navigationId == R.id.keymap_settings) return R.string.keymap_settings;
         if (navigationId == R.id.advanced_settings) return R.string.advanced_settings;
         return R.string.car_settings;
+    }
+
+    private Fragment fragmentForNavigation(int navigationId) {
+        if (navigationId == R.id.video_settings) return new VideoFragment();
+        if (navigationId == R.id.conn_settings) return new ConnectivityFragment();
+        if (navigationId == R.id.keymap_settings) return new KeymapFragment();
+        if (navigationId == R.id.advanced_settings) return new AdvancedFragment();
+        return new CarFragment();
     }
 
     @Override
