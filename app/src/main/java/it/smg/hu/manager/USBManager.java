@@ -123,6 +123,14 @@ public class USBManager {
             }
         }
 
+        if (!UsbAccessoryIds.maybeSupportsAoap(device)) {
+            // Storage sticks, hubs and the like share this port. Negotiating AOAP
+            // with them can only fail, and reporting that as a connection error
+            // buried the real state of the Android Auto link.
+            if (Log.isInfo()) Log.i(TAG, "Skipping AOAP switch for non-phone device " + device.getDeviceName());
+            return;
+        }
+
         ConnectionManager.instance().transportAvailable("modeUSB", ctx_.getString(R.string.connection_usb_detected));
         beginAoapSwitch(device);
     }
