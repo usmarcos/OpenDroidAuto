@@ -120,8 +120,12 @@ public class PlayerActivity extends Activity implements ServiceConnection, Surfa
             HondaConnectManager.instance().initAudioBinding();
         }
 
-        NotificationFactory.instance().dismissAll();
-        AppBadge.instance().dismiss();
+        if (NotificationFactory.instance() != null) {
+            NotificationFactory.instance().dismissAll();
+        }
+        if (AppBadge.instance() != null) {
+            AppBadge.instance().dismiss();
+        }
 
         initReceivers();
         isActive_ = true;
