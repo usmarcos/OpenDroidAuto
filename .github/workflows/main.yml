@@ -34,7 +34,9 @@ jobs:
       # genuine API-level findings are dealt with.
       - name: Lint
         continue-on-error: true
-        run: ./gradlew :app:lintDebug
+        # Output is captured because a lint task that dies before writing its
+        # report leaves nothing behind to diagnose from.
+        run: ./gradlew :app:lintDebug --stacktrace 2>&1 | tee lint-output.log
       - name: Upload reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -43,6 +45,8 @@ jobs:
           path: |
             **/build/reports/tests/**
             **/build/reports/lint-results*.*
+            **/build/intermediates/lint*/**/*.xml
+            lint-output.log
           if-no-files-found: warn
           retention-days: 14
 
