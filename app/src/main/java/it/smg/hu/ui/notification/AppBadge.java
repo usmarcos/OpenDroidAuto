@@ -119,21 +119,15 @@ public class AppBadge extends Notification{
 
     @Override
     public void show() {
-        if (Settings.instance().video.showAppBadge()) {
-            // No startService() here: this used to launch an Intent targeting
-            // AppBadge itself, which is not a Service and is not declared in the
-            // manifest, so every call only produced "Unable to start service
-            // it.smg.hu/<obfuscated AppBadge>: not found" in the log. The badge is
-            // a window overlay and needs no service of its own.
-            super.show();
-        }
+        // The badge is not part of the Android Auto lifecycle.  Showing it after
+        // projection stops permits reopening PlayerActivity before teardown is
+        // complete, which corrupts the next USB/TLS session.
+        super.dismiss();
     }
 
     @Override
     public void dismiss() {
-        if (Settings.instance().video.showAppBadge()) {
-            super.dismiss();
-        }
+        super.dismiss();
     }
 
     @Override

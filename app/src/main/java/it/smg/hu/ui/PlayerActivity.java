@@ -161,11 +161,11 @@ public class PlayerActivity extends Activity implements ServiceConnection, Surfa
             hondaManager.sendToBackground();
         }
 
-        // AppBadge.init() is the last step of Application.onCreate, so anything
-        // that fails before it leaves this singleton null - the same cold-start
-        // hazard that used to crash onResume.
+        // The projection exit must always return to the dashboard cleanly.  A
+        // floating badge here can reopen a half-torn-down PlayerActivity and
+        // create a second Android Auto session.
         if (AppBadge.instance() != null) {
-            AppBadge.instance().show();
+            AppBadge.instance().dismiss();
         }
 
         if (localReceiver_ != null) {
@@ -322,6 +322,9 @@ public class PlayerActivity extends Activity implements ServiceConnection, Surfa
 
     private void exitSession() {
         ConnectionManager.instance().userExited("Android Auto stopped. Reconnect the cable to start again.");
+        if (AppBadge.instance() != null) {
+            AppBadge.instance().dismiss();
+        }
         if (odaService_ != null) {
             odaService_.stop();
         } else {

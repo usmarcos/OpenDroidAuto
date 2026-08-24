@@ -14,7 +14,11 @@ public final class ConnectionPolicy {
     }
 
     public boolean isManualStartAllowed() {
-        return true;
+        // A start request during permission, AOAP negotiation or native
+        // teardown creates an overlapping session.  Only a prepared transport
+        // (IDLE) or a deliberately stopped, still-prepared transport (EXITED)
+        // may launch PlayerActivity.
+        return state == ConnectionState.IDLE || state == ConnectionState.EXITED;
     }
 
     public void transportAvailable(String connectionMode) {

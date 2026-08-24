@@ -14,6 +14,7 @@
     <string name="home_retry">TENTAR NOVAMENTE</string>
     <string name="home_recover_usb">RECUPERAR USB</string>
     <string name="home_start">INICIAR ANDROID AUTO</string>
+    <string name="home_loading">Carregando...</string>
     <string name="home_status_permission">PERMISSÃO</string>
     <string name="home_status_connecting">CONECTANDO</string>
     <string name="home_status_connected">CONECTADO</string>

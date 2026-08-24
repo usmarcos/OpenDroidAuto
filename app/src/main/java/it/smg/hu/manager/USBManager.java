@@ -376,6 +376,9 @@ public class USBManager {
 
     public synchronized boolean recoverConnection() {
         if (Log.isInfo()) Log.i(TAG, "recoverConnection");
+        // Publish the busy state before touching the device.  The dashboard
+        // keeps its action disabled until a fresh AOAP accessory is attached.
+        ConnectionManager.instance().switchingToAoap(ctx_.getString(R.string.connection_usb_preparing));
         synchronized (deviceLock_) {
             invalidateAoapOperationLocked();
             closeUsbDeviceLocked();
@@ -385,18 +388,20 @@ public class USBManager {
 
         UsbDevice fallbackDevice = null;
         for (UsbDevice device : usbManager_.getDeviceList().values()) {
-            if (fallbackDevice == null) {
-                fallbackDevice = device;
-            }
             if (checkAOAPDevice(device) && usbManager_.hasPermission(device)) {
                 attachAoapDevice(device);
                 return true;
+            }
+            if (fallbackDevice == null && UsbAccessoryIds.maybeSupportsAoap(device)) {
+                fallbackDevice = device;
             }
         }
 
         if (fallbackDevice != null) {
             handleUsbAttached(fallbackDevice);
+            return true;
         }
+        ConnectionManager.instance().failed(ctx_.getString(R.string.connection_usb_unavailable));
         return false;
     }
 

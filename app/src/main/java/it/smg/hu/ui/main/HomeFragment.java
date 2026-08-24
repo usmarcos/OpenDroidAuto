@@ -138,9 +138,17 @@ public class HomeFragment extends Fragment {
         String mode = ConnectionManager.instance().mode();
         if (renderedState_ == ConnectionState.ERROR && ODAService.MODE_USB.equals(mode)
                 && usbManager_ != null) {
-            if (usbManager_.recoverConnection()) {
-                ((MainActivity) requireActivity()).startConnectionManually(ODAService.MODE_USB);
-            }
+            // Recovery only prepares a fresh USB transport.  Starting a new
+            // PlayerActivity before that preparation completes races the prior
+            // TLS teardown and produces SSL_READ(5).
+            usbManager_.recoverConnection();
+        } else if (renderedState_ == ConnectionState.ERROR && mode != null) {
+            // Move a Wi-Fi retry back to a startable state explicitly. ERROR is
+            // otherwise blocked by ConnectionPolicy to prevent accidental
+            // overlapping sessions from widgets or duplicate taps.
+            ConnectionManager.instance().transportAvailable(mode,
+                    ConnectionManager.instance().lastMessage());
+            ((MainActivity) requireActivity()).startConnectionManually(mode);
         } else if (mode != null && (!ODAService.MODE_USB.equals(mode)
                 || (usbManager_ != null && usbManager_.aoapDevice() != null))) {
             ((MainActivity) requireActivity()).startConnectionManually(mode);
@@ -194,11 +202,16 @@ public class HomeFragment extends Fragment {
 
     private void renderState(ConnectionState state, String message, String mode) {
         renderedState_ = state;
+        boolean loading = state == ConnectionState.PERMISSION_PENDING
+                || state == ConnectionState.AOAP_SWITCHING || state == ConnectionState.CONNECTING;
         boolean manualStartAvailable = state != ConnectionState.ERROR && mode != null
                 && ConnectionManager.instance().isManualStartAllowed();
-        retryButton_.setVisibility(state == ConnectionState.ERROR || manualStartAvailable ? View.VISIBLE : View.GONE);
-        retryButton_.setText(state == ConnectionState.ERROR && ODAService.MODE_USB.equals(mode)
-                ? R.string.home_recover_usb : (state == ConnectionState.ERROR ? R.string.home_retry : R.string.home_start));
+        retryButton_.setVisibility(state == ConnectionState.ERROR || manualStartAvailable || loading
+                ? View.VISIBLE : View.GONE);
+        retryButton_.setEnabled(!loading);
+        retryButton_.setText(loading ? R.string.home_loading
+                : (state == ConnectionState.ERROR && ODAService.MODE_USB.equals(mode)
+                ? R.string.home_recover_usb : (state == ConnectionState.ERROR ? R.string.home_retry : R.string.home_start)));
         String detail = state == ConnectionState.ERROR ? message : null;
         int badge = darkTheme_ ? R.drawable.status_badge_idle : R.drawable.status_badge_idle_light;
         int badgeTextColor = darkTheme_ ? R.color.oda_text_primary : R.color.home_light_text_primary;

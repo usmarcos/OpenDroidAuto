@@ -13,6 +13,7 @@
 	<string name="home_retry">TRY AGAIN</string>
 	<string name="home_recover_usb">RECOVER USB</string>
 	<string name="home_start">START ANDROID AUTO</string>
+	<string name="home_loading">Loading...</string>
 	<string name="home_status_permission">PERMISSION</string>
 	<string name="home_status_connecting">CONNECTING</string>
 	<string name="home_status_connected">CONNECTED</string>

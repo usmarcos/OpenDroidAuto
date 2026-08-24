@@ -24,6 +24,7 @@
 
     <uses-permission android:name="android.permission.ADA_SERVICE_ACCESS" android:required="false" />
 
+    <!-- Required by the media/navigation TYPE_SYSTEM_ALERT notifications. -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
