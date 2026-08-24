@@ -112,6 +112,7 @@
 	<string name="advanced_settings_enabledebug">Enable external log</string>
 	<string name="advanced_settings_enabletoast">Enable Toast log</string>
 	<string name="advanced_settings_enablewifi">Enable Android Auto Wireless</string>
+	<string name="advanced_settings_enablewifi_hint">Legacy mode: this requires the phone to expose Android Auto on TCP port 5277. A hotspot and the Android Auto Wireless option alone do not enable it.</string>
 	<string name="advanced_settings_enablehondaintegration">Enable Honda Integration</string>
 	<string name="advanced_settings_enablehondamicvr">Enable Honda Mic VR Bridge</string>
 	<string name="advanced_settings_logLevel">Log Level</string>

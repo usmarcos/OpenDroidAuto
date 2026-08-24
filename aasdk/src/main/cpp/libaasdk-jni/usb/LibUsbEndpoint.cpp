@@ -68,19 +68,34 @@ void LibUsbEndpoint::bulkTransfer(common::DataBuffer buffer, uint32_t timeout, P
 
 void LibUsbEndpoint::transfer(libusb_transfer *transfer, Promise::Pointer promise) {
     strand_->dispatch([this, self = shared_from_this(), transfer, promise = std::move(promise)]() mutable {
+        // A completion callback can run on libusb's event thread as soon as the
+        // transfer is submitted. Register it first: otherwise an immediately
+        // completed transfer is discarded by transferHandler(), leaving the
+        // protocol stream one frame behind (which later surfaces as SSL_READ).
+        {
+            std::lock_guard<std::mutex> lock(transfersMutex_);
+            transfers_.insert(std::make_pair(transfer, PendingTransfer{std::move(promise), std::move(self)}));
+        }
+
         if (Log::isVerbose()) Log_v("libusb_submit_transfer");
         auto submitResult = libusb_submit_transfer(transfer);
         if (Log::isVerbose()) Log_v("libusb_submit_transfer %d", submitResult);
 
-        if(submitResult == LIBUSB_SUCCESS) {
-            // Store a strong reference to ourselves alongside the promise: libusb
-            // will call transferHandler() on its own thread with a raw pointer to
-            // this endpoint, so we must stay alive until the transfer is done.
-            std::lock_guard<std::mutex> lock(transfersMutex_);
-            transfers_.insert(std::make_pair(transfer, PendingTransfer{std::move(promise), std::move(self)}));
-        } else {
-            promise->reject(error::Error(error::ErrorCode::USB_TRANSFER, submitResult));
+        if(submitResult != LIBUSB_SUCCESS) {
+            Promise::Pointer pendingPromise;
+            {
+                std::lock_guard<std::mutex> lock(transfersMutex_);
+                auto pendingIt = transfers_.find(transfer);
+                if (pendingIt != transfers_.end()) {
+                    pendingPromise = std::move(pendingIt->second.promise);
+                    transfers_.erase(pendingIt);
+                }
+            }
+
             libusb_free_transfer(transfer);
+            if (pendingPromise) {
+                pendingPromise->reject(error::Error(error::ErrorCode::USB_TRANSFER, submitResult));
+            }
         }
     });
 }

@@ -127,6 +127,7 @@
     <string name="advanced_settings_enabledebug">Ativar log externo</string>
     <string name="advanced_settings_enabletoast">Exibir logs na tela</string>
     <string name="advanced_settings_enablewifi">Ativar Android Auto sem fio</string>
+    <string name="advanced_settings_enablewifi_hint">Modo legado: exige que o telefone exponha o Android Auto na porta TCP 5277. Apenas o hotspot e a opção Android Auto sem fio não habilitam essa porta.</string>
     <string name="advanced_settings_enablehondaintegration">Ativar integração Honda</string>
     <string name="advanced_settings_enablehondamicvr">Ativar microfone Honda para comando de voz</string>
     <string name="advanced_settings_logLevel">Nível de log</string>

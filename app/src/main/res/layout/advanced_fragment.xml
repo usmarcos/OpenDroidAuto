@@ -91,6 +91,16 @@
         android:text="@string/advanced_settings_enablewifi"
         android:textColor="@color/settings_text_primary" />
 
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="8dp"
+        android:layout_marginRight="8dp"
+        android:layout_marginBottom="6dp"
+        android:text="@string/advanced_settings_enablewifi_hint"
+        android:textColor="@color/settings_text_secondary"
+        android:textSize="12sp" />
+
     <CheckBox
         android:id="@+id/enable_hondaintegration"
         android:layout_width="match_parent"
