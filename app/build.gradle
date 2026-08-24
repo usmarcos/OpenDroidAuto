@@ -81,6 +81,14 @@ android {
 
     ndkVersion rootProject.ext.ndkVersion
 
+    lint {
+        // Without this only this module is analysed, which left the aasdk,
+        // common and omxvideocodec sources unchecked - including the whole JNI
+        // Java layer. That is exactly where an accidental post-API-15 call would
+        // hurt, since this app targets a minSdk 15 head unit.
+        checkDependencies true
+    }
+
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
