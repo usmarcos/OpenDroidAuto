@@ -23,10 +23,21 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
           cache: gradle
+      # Lint pulls in the native build (the app depends on aasdk, which consumes
+      # common through prefab), so this job needs the same NDK setup as the build
+      # job. Without it lint died in configureNdkBuildDebug before it ever got to
+      # run a single check.
+      - name: Install NDK
+        run: echo "y" | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --install "ndk;17.2.4988734" --sdk_root=${ANDROID_SDK_ROOT}
+      - name: Install legacy NDK dependency
+        run: sudo apt-get update && sudo apt-get install -y libtinfo5
       - name: Unit tests
         run: |
           chmod +x gradlew
           ./gradlew testDebugUnitTest
+      # Builds common's native output first so aasdk's prefab import resolves.
+      - name: Build native dependencies for lint
+        run: ./gradlew :common:build
       # Reported, not enforced. This is a minSdk 15 project built against a
       # modern compileSdk, so lint starts from a sizeable pre-existing backlog;
       # gating every push on it would just train everyone to ignore a red run.
