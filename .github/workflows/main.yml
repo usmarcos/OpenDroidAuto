@@ -35,8 +35,12 @@ jobs:
       - name: Lint
         continue-on-error: true
         # Output is captured because a lint task that dies before writing its
-        # report leaves nothing behind to diagnose from.
-        run: ./gradlew :app:lintDebug --stacktrace 2>&1 | tee lint-output.log
+        # report leaves nothing behind to diagnose from. pipefail matters here:
+        # without it the step reports the exit code of tee and a failing lint
+        # looks like a pass.
+        run: |
+          set -o pipefail
+          ./gradlew :app:lintDebug --stacktrace 2>&1 | tee lint-output.log
       - name: Upload reports
         if: always()
         uses: actions/upload-artifact@v4
