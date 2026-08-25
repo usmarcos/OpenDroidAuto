@@ -42,6 +42,7 @@ public class ODAService extends Service implements IAndroidAutoEntityEventHandle
     public static final String MODE_WIFI = "modeWifi";
 
     private static final String TAG = "ODAService";
+    private static final long SHUTDOWN_TIMEOUT_MS = 2000L;
 
     private final IBinder mBinder = new ServiceBinder();
 
@@ -63,7 +64,19 @@ public class ODAService extends Service implements IAndroidAutoEntityEventHandle
 
     private volatile boolean isRunning_;
     private volatile boolean stopRequested_;
+    private volatile boolean shutdownRequested_;
     private String currentMode_;
+
+    private final Runnable shutdownTimeout_ = new Runnable() {
+        @Override
+        public void run() {
+            if (shutdownRequested_) {
+                if (Log.isWarn()) Log.w(TAG, "graceful shutdown timed out; forcing teardown");
+                ConnectionManager.instance().userExited(getString(R.string.connection_user_stopped));
+                stop();
+            }
+        }
+    };
 
     /**
      * Guards the session lifecycle. Tearing an AndroidAutoEntity down runs a
@@ -181,8 +194,25 @@ public class ODAService extends Service implements IAndroidAutoEntityEventHandle
     }
 
     public void shutdown(){
-        if (androidAutoEntity_ != null) {
-            androidAutoEntity_.shutdown();
+        if (shutdownRequested_) {
+            return;
+        }
+        shutdownRequested_ = true;
+        AndroidAutoEntity entity = androidAutoEntity_;
+        if (entity == null) {
+            ConnectionManager.instance().userExited(getString(R.string.connection_user_stopped));
+            stop();
+            return;
+        }
+
+        mainHandler_.removeCallbacks(shutdownTimeout_);
+        mainHandler_.postDelayed(shutdownTimeout_, SHUTDOWN_TIMEOUT_MS);
+        try {
+            entity.shutdown();
+        } catch (Throwable error) {
+            Log.e(TAG, "error requesting graceful Android Auto shutdown", error);
+            ConnectionManager.instance().userExited(getString(R.string.connection_user_stopped));
+            stop();
         }
     }
 
@@ -213,6 +243,9 @@ public class ODAService extends Service implements IAndroidAutoEntityEventHandle
 
     public void stop(){
         stopRequested_ = true;
+        if (mainHandler_ != null) {
+            mainHandler_.removeCallbacks(shutdownTimeout_);
+        }
 
         // The native teardown is not reentrant, and stop() arrives from the UI
         // thread, from the connection thread and from native quit callbacks.
@@ -275,6 +308,7 @@ public class ODAService extends Service implements IAndroidAutoEntityEventHandle
             androidAutoEntity_ = null;
             startThread_ = null;
             currentMode_ = null;
+            shutdownRequested_ = false;
             stopping_.set(false);
         }
     }
@@ -315,13 +349,23 @@ public class ODAService extends Service implements IAndroidAutoEntityEventHandle
     @Keep
     @Override
     public void onAndroidAutoQuit() {
-        ConnectionManager.instance().detached(getString(R.string.connection_session_ended));
+        if (shutdownRequested_) {
+            ConnectionManager.instance().userExited(getString(R.string.connection_user_stopped));
+        } else {
+            ConnectionManager.instance().detached(getString(R.string.connection_session_ended));
+        }
         stop();
     }
 
     @Keep
     @Override
     public void onAndroidAutoQuitOnError(String error, int nativeErrorCode){
+        if (shutdownRequested_) {
+            if (Log.isInfo()) Log.i(TAG, "transport closed while graceful shutdown was pending");
+            ConnectionManager.instance().userExited(getString(R.string.connection_user_stopped));
+            stop();
+            return;
+        }
         Log.e(TAG, "closing with error " + error + "(" + nativeErrorCode + ")");
         String message = getString(R.string.connection_native_error_code, error, nativeErrorCode);
         ConnectionManager.instance().failed(message);

@@ -17,6 +17,7 @@
     <string name="home_loading">Carregando...</string>
     <string name="home_status_permission">PERMISSÃO</string>
     <string name="home_status_connecting">CONECTANDO</string>
+    <string name="home_status_stopping">ENCERRANDO</string>
     <string name="home_status_connected">CONECTADO</string>
     <string name="home_status_stopped">ENCERRADO</string>
     <string name="home_status_error">VERIFIQUE A CONEXÃO</string>
@@ -25,6 +26,8 @@
     <string name="home_connecting_title">Conectando ao Android Auto</string>
     <string name="home_aoap_detail">Preparando o USB automaticamente. Mantenha o cabo conectado durante a recuperação.</string>
     <string name="home_connecting_detail">Iniciando a sessão do Android Auto.</string>
+    <string name="home_stopping_title">Encerrando o Android Auto</string>
+    <string name="home_stopping_detail">Liberando a conexão USB. Aguarde.</string>
     <string name="home_connected_title">Android Auto conectado</string>
     <string name="home_connected_detail">A projeção está ativa.</string>
     <string name="home_stopped_title">Sessão encerrada</string>
@@ -58,6 +61,7 @@
     <string name="connection_session_ended">Sessão do Android Auto encerrada</string>
     <string name="connection_mode_missing">Nenhum modo de conexão foi informado</string>
     <string name="connection_user_stopped">Android Auto encerrado. Pressione Start para conectar novamente.</string>
+    <string name="connection_user_stopping">Encerrando o Android Auto e liberando o USB</string>
     <string name="connection_native_error">Erro do Android Auto: %1$s</string>
     <string name="connection_native_error_code">Erro do Android Auto: %1$s (código %2$d)</string>
     <string name="settings">Configurações</string>

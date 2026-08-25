@@ -321,13 +321,15 @@ public class PlayerActivity extends Activity implements ServiceConnection, Surfa
     }
 
     private void exitSession() {
-        ConnectionManager.instance().userExited("Android Auto stopped. Reconnect the cable to start again.");
         if (AppBadge.instance() != null) {
             AppBadge.instance().dismiss();
         }
         if (odaService_ != null) {
-            odaService_.stop();
+            ConnectionManager.instance().disconnecting(getString(R.string.connection_user_stopping));
+            odaService_.shutdown();
+            finish();
         } else {
+            ConnectionManager.instance().userExited(getString(R.string.connection_user_stopped));
             finish();
         }
     }

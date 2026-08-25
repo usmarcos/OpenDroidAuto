@@ -45,6 +45,10 @@ public final class ConnectionPolicy {
         state = ConnectionState.ACTIVE;
     }
 
+    public void disconnecting() {
+        state = ConnectionState.DISCONNECTING;
+    }
+
     public void userExited() {
         state = ConnectionState.EXITED;
     }

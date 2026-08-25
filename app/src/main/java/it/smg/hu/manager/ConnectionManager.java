@@ -74,6 +74,11 @@ public final class ConnectionManager {
         publish(message);
     }
 
+    public synchronized void disconnecting(String message) {
+        policy_.disconnecting();
+        publish(message);
+    }
+
     public synchronized void userExited(String message) {
         policy_.userExited();
         publish(message);
