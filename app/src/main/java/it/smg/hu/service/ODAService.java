@@ -349,29 +349,48 @@ public class ODAService extends Service implements IAndroidAutoEntityEventHandle
     @Keep
     @Override
     public void onAndroidAutoQuit() {
-        if (shutdownRequested_) {
-            ConnectionManager.instance().userExited(getString(R.string.connection_user_stopped));
-        } else {
-            ConnectionManager.instance().detached(getString(R.string.connection_session_ended));
-        }
-        stop();
+        runNativeQuitOnMainThread(() -> {
+            if (shutdownRequested_) {
+                ConnectionManager.instance().userExited(getString(R.string.connection_user_stopped));
+            } else {
+                ConnectionManager.instance().detached(getString(R.string.connection_session_ended));
+            }
+            stop();
+        });
     }
 
     @Keep
     @Override
     public void onAndroidAutoQuitOnError(String error, int nativeErrorCode){
-        if (shutdownRequested_) {
-            if (Log.isInfo()) Log.i(TAG, "transport closed while graceful shutdown was pending");
-            ConnectionManager.instance().userExited(getString(R.string.connection_user_stopped));
-            stop();
-            return;
-        }
-        Log.e(TAG, "closing with error " + error + "(" + nativeErrorCode + ")");
-        String message = getString(R.string.connection_native_error_code, error, nativeErrorCode);
-        ConnectionManager.instance().failed(message);
-        notifyUser(message);
+        runNativeQuitOnMainThread(() -> {
+            if (shutdownRequested_) {
+                if (Log.isInfo()) Log.i(TAG, "transport closed while graceful shutdown was pending");
+                ConnectionManager.instance().userExited(getString(R.string.connection_user_stopped));
+                stop();
+                return;
+            }
+            Log.e(TAG, "closing with error " + error + "(" + nativeErrorCode + ")");
+            String message = getString(R.string.connection_native_error_code, error, nativeErrorCode);
+            ConnectionManager.instance().failed(message);
+            notifyUser(message);
 
-        stop();
+            stop();
+        });
+    }
+
+    /**
+     * Native errors are delivered from an aasdk io_service worker. Destroying the
+     * entity on that same worker leaves its currently executing asio handler
+     * running against a destroyed strand, producing the SEGV seen on disconnect.
+     * Queue the lifecycle work on Android's main thread so the worker can return
+     * before Runtime.stopIOServiceWorkers() joins it.
+     */
+    private void runNativeQuitOnMainThread(Runnable action) {
+        if (mainHandler_ == null || Looper.myLooper() == Looper.getMainLooper()) {
+            action.run();
+        } else {
+            mainHandler_.post(action);
+        }
     }
 
     /** Shows a message to the user from any thread. */
