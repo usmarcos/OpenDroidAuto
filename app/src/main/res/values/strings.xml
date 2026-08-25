@@ -16,6 +16,7 @@
 	<string name="home_loading">Loading...</string>
 	<string name="home_status_permission">PERMISSION</string>
 	<string name="home_status_connecting">CONNECTING</string>
+	<string name="home_status_stopping">STOPPING</string>
 	<string name="home_status_connected">CONNECTED</string>
 	<string name="home_status_stopped">STOPPED</string>
 	<string name="home_status_error">CHECK CONNECTION</string>
@@ -24,6 +25,8 @@
 	<string name="home_connecting_title">Connecting Android Auto</string>
 	<string name="home_aoap_detail">Preparing USB automatically. Keep the cable connected while recovery runs.</string>
 	<string name="home_connecting_detail">Starting the Android Auto session.</string>
+	<string name="home_stopping_title">Closing Android Auto</string>
+	<string name="home_stopping_detail">Releasing the USB connection. Please wait.</string>
 	<string name="home_connected_title">Android Auto connected</string>
 	<string name="home_connected_detail">Android Auto projection is active.</string>
 	<string name="home_stopped_title">Session stopped</string>
@@ -57,6 +60,7 @@
 	<string name="connection_session_ended">Android Auto session ended</string>
 	<string name="connection_mode_missing">No connection mode was provided</string>
 	<string name="connection_user_stopped">Android Auto stopped. Press Start to connect again.</string>
+	<string name="connection_user_stopping">Closing Android Auto and releasing USB</string>
 	<string name="connection_native_error">Android Auto error: %1$s</string>
 	<string name="connection_native_error_code">Android Auto error: %1$s (code %2$d)</string>
 	<string name="car_settings">Car Settings</string>

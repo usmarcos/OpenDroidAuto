@@ -114,6 +114,12 @@ public class HomeFragment extends Fragment {
         filter.addAction(WIFIManager.CONNECT_WIFI);
         filter.addAction(WIFIManager.DISCONNECT_WIFI);
         broadcasts_.registerReceiver(receiver_, filter);
+        // State changes can happen while PlayerActivity covers this fragment.
+        // Render the current snapshot on return so DISCONNECTING and its
+        // completion are visible even if their broadcasts were missed.
+        renderWifiAvailability();
+        renderState(ConnectionManager.instance().state(), ConnectionManager.instance().lastMessage(),
+                ConnectionManager.instance().mode());
     }
 
     @Override
@@ -203,7 +209,8 @@ public class HomeFragment extends Fragment {
     private void renderState(ConnectionState state, String message, String mode) {
         renderedState_ = state;
         boolean loading = state == ConnectionState.PERMISSION_PENDING
-                || state == ConnectionState.AOAP_SWITCHING || state == ConnectionState.CONNECTING;
+                || state == ConnectionState.AOAP_SWITCHING || state == ConnectionState.CONNECTING
+                || state == ConnectionState.DISCONNECTING;
         boolean manualStartAvailable = state != ConnectionState.ERROR && mode != null
                 && ConnectionManager.instance().isManualStartAllowed();
         retryButton_.setVisibility(state == ConnectionState.ERROR || manualStartAvailable || loading
@@ -232,6 +239,11 @@ public class HomeFragment extends Fragment {
                 statusBadge_.setText(R.string.home_status_connecting);
                 statusTitle_.setText(R.string.home_connecting_title);
                 detail = fallback(detail, R.string.home_connecting_detail);
+                break;
+            case DISCONNECTING:
+                statusBadge_.setText(R.string.home_status_stopping);
+                statusTitle_.setText(R.string.home_stopping_title);
+                detail = fallback(detail, R.string.home_stopping_detail);
                 break;
             case ACTIVE:
                 badge = R.drawable.status_badge_active;

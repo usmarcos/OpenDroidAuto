@@ -5,6 +5,7 @@ public enum ConnectionState {
     PERMISSION_PENDING,
     AOAP_SWITCHING,
     CONNECTING,
+    DISCONNECTING,
     ACTIVE,
     EXITED,
     ERROR

@@ -344,6 +344,15 @@ public class USBManager {
         return null;
     }
 
+    private UsbDevice findPermittedAoapDevice() {
+        for (UsbDevice device : usbManager_.getDeviceList().values()) {
+            if (usbManager_.hasPermission(device) && checkAOAPDevice(device)) {
+                return device;
+            }
+        }
+        return null;
+    }
+
     private boolean isAoapOperationCurrent(int operationId) {
         synchronized (deviceLock_) {
             return isAoapOperationCurrentLocked(operationId);
@@ -411,20 +420,27 @@ public class USBManager {
 
     /** Recovers a missed attach broadcast without starting the Android Auto session. */
     public boolean rescanAttachedDevices() {
-        UsbDevice accessory = findAoapDevice();
+        UsbDevice accessory = findPermittedAoapDevice();
         if (accessory != null) {
             handleUsbAttached(accessory);
             return true;
         }
 
         UsbDevice previous = lastDevice_ == null ? null : findDeviceById(lastDevice_.getDeviceId());
-        if (previous != null) {
+        if (previous != null && usbManager_.hasPermission(previous)) {
             handleUsbAttached(previous);
             return true;
         }
 
         UsbDevice onlyDevice = null;
         for (UsbDevice device : usbManager_.getDeviceList().values()) {
+            // An attach intent already has a system-owned confirmation flow.
+            // Requesting permission again from MainActivity.onResume stacks a
+            // UsbPermissionActivity over UsbConfirmActivity; this legacy system
+            // then force-stops the selected package while saving the default.
+            if (!usbManager_.hasPermission(device)) {
+                continue;
+            }
             if (onlyDevice != null) {
                 return false;
             }

@@ -45,6 +45,8 @@ public class ConnectionPolicyTest {
         assertFalse(policy.isManualStartAllowed());
         policy.connecting("modeUSB");
         assertFalse(policy.isManualStartAllowed());
+        policy.disconnecting();
+        assertFalse(policy.isManualStartAllowed());
         policy.failed();
         assertFalse(policy.isManualStartAllowed());
     }

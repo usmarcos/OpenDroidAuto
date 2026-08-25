@@ -11,9 +11,8 @@ permissions:
   contents: read
 
 jobs:
-  # Runs alongside the APK build rather than in front of it, so the unit tests
-  # and the API-level lint checks are actually verified somewhere without
-  # lengthening the turnaround for a testable APK.
+  # Gates the APK build so a failing unit test cannot produce a releasable
+  # artifact. Lint remains advisory while the legacy API backlog is triaged.
   check:
     runs-on: ubuntu-22.04
     steps:
@@ -66,6 +65,7 @@ jobs:
           retention-days: 14
 
   build:
+    needs: check
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
