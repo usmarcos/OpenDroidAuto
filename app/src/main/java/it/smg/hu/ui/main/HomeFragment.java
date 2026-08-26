@@ -94,7 +94,7 @@ public class HomeFragment extends Fragment {
         settingsButton_.setOnClickListener(v ->
                 startActivityForResult(new Intent(getContext(), SettingsActivity.class), MainActivity.SETTINGS_ACTIVITY_REQUEST));
         themeButton_.setOnClickListener(v -> toggleTheme());
-        exitButton_.setOnClickListener(v -> ((MainActivity) requireActivity()).exitSession());
+        exitButton_.setOnClickListener(v -> ((MainActivity) requireActivity()).exitApplication());
         retryButton_.setOnClickListener(v -> retryConnection());
 
         applyTheme();
@@ -142,8 +142,8 @@ public class HomeFragment extends Fragment {
 
     private void retryConnection() {
         String mode = ConnectionManager.instance().mode();
-        if (renderedState_ == ConnectionState.ERROR && ODAService.MODE_USB.equals(mode)
-                && usbManager_ != null) {
+        if (ODAService.MODE_USB.equals(mode) && usbManager_ != null
+                && (renderedState_ == ConnectionState.ERROR || usbManager_.aoapDevice() == null)) {
             // Recovery only prepares a fresh USB transport.  Starting a new
             // PlayerActivity before that preparation completes races the prior
             // TLS teardown and produces SSL_READ(5).

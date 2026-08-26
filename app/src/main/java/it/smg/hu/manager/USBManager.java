@@ -90,6 +90,31 @@ public class USBManager {
         return checkAOAPDevice(device);
     }
 
+    /**
+     * Records a newly attached device without opening Android's permission UI.
+     * Permission is requested only after the user presses the USB action on the
+     * dashboard, avoiding the legacy UsbConfirmActivity/UsbPermissionActivity
+     * overlap that force-stops the selected package.
+     */
+    public void onUsbDeviceDetected(UsbDevice device) {
+        if (device == null) {
+            return;
+        }
+        if (usbManager_.hasPermission(device)) {
+            handleUsbAttached(device);
+            return;
+        }
+        if (!UsbAccessoryIds.isAoap(device.getVendorId(), device.getProductId())
+                && !UsbAccessoryIds.maybeSupportsAoap(device)) {
+            return;
+        }
+        synchronized (deviceLock_) {
+            lastDevice_ = device;
+        }
+        ConnectionManager.instance().transportAvailable("modeUSB",
+                ctx_.getString(R.string.connection_usb_detected));
+    }
+
     public void handleUsbAttached(UsbDevice device){
         if (device == null) {
             return;
@@ -383,6 +408,37 @@ public class USBManager {
         }
     }
 
+    /** Resets a session after its transfers have stopped but before it is deleted. */
+    public void resetSession(LibUsbDevice sessionDevice) {
+        if (sessionDevice == null) {
+            return;
+        }
+        try {
+            sessionDevice.reset();
+        } catch (Throwable error) {
+            Log.e(TAG, "Error resetting completed USB session", error);
+        }
+    }
+
+    /**
+     * Discards a completed transport. Delayed scans create a fresh wrapper only
+     * after Android has processed a possible reset-driven re-enumeration.
+     */
+    public void finishSession(LibUsbDevice sessionDevice) {
+        if (sessionDevice == null) {
+            return;
+        }
+        synchronized (deviceLock_) {
+            if (usbDevice_ == sessionDevice) {
+                closeUsbDeviceLocked();
+                lastDevice_ = null;
+                pendingPermissionDeviceId_ = -1;
+            }
+        }
+        mainHandler_.postDelayed(this::rescanAttachedDevices, 750L);
+        mainHandler_.postDelayed(this::rescanAttachedDevices, 1500L);
+    }
+
     public synchronized boolean recoverConnection() {
         if (Log.isInfo()) Log.i(TAG, "recoverConnection");
         // Publish the busy state before touching the device.  The dashboard
@@ -434,11 +490,8 @@ public class USBManager {
 
         UsbDevice onlyDevice = null;
         for (UsbDevice device : usbManager_.getDeviceList().values()) {
-            // An attach intent already has a system-owned confirmation flow.
-            // Requesting permission again from MainActivity.onResume stacks a
-            // UsbPermissionActivity over UsbConfirmActivity; this legacy system
-            // then force-stops the selected package while saving the default.
-            if (!usbManager_.hasPermission(device)) {
+            if (!UsbAccessoryIds.isAoap(device.getVendorId(), device.getProductId())
+                    && !UsbAccessoryIds.maybeSupportsAoap(device)) {
                 continue;
             }
             if (onlyDevice != null) {
@@ -447,7 +500,7 @@ public class USBManager {
             onlyDevice = device;
         }
         if (onlyDevice != null) {
-            handleUsbAttached(onlyDevice);
+            onUsbDeviceDetected(onlyDevice);
             return true;
         }
         return false;

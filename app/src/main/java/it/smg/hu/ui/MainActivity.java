@@ -4,7 +4,6 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbManager;
 import android.net.ConnectivityManager;
 import android.os.Bundle;
@@ -39,6 +38,17 @@ public class MainActivity extends FragmentActivity {
         }
     };
 
+    private final BroadcastReceiver usbAttachReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (usbManager_ == null || intent == null
+                    || !UsbManager.ACTION_USB_DEVICE_ATTACHED.equals(intent.getAction())) {
+                return;
+            }
+            usbManager_.onUsbDeviceDetected(intent.getParcelableExtra(UsbManager.EXTRA_DEVICE));
+        }
+    };
+
     private final BroadcastReceiver connectionReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -66,14 +76,6 @@ public class MainActivity extends FragmentActivity {
                     .replace(R.id.home_content, new HomeFragment())
                     .commit();
         }
-        handleUsbIntent(getIntent());
-    }
-
-    @Override
-    protected void onNewIntent(Intent intent) {
-        super.onNewIntent(intent);
-        setIntent(intent);
-        handleUsbIntent(intent);
     }
 
     @Override
@@ -95,22 +97,12 @@ public class MainActivity extends FragmentActivity {
         super.onPause();
     }
 
-    private void handleUsbIntent(Intent intent) {
-        if (intent == null || !UsbManager.ACTION_USB_DEVICE_ATTACHED.equals(intent.getAction()) || usbManager_ == null) {
-            return;
-        }
-        UsbDevice device = intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
-        if (device != null) {
-            usbManager_.handleUsbAttached(device);
-        }
-        intent.setAction(null);
-    }
-
     private void registerConnectionReceivers() {
         if (receiversRegistered_) {
             return;
         }
         registerReceiver(wifiReceiver, new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION));
+        registerReceiver(usbAttachReceiver, new IntentFilter(UsbManager.ACTION_USB_DEVICE_ATTACHED));
         IntentFilter localFilter = new IntentFilter();
         localFilter.addAction(USBManager.ATTACH_AOAP_DEVICE);
         localFilter.addAction(WIFIManager.CONNECT_WIFI);
@@ -124,6 +116,7 @@ public class MainActivity extends FragmentActivity {
             return;
         }
         unregisterReceiver(wifiReceiver);
+        unregisterReceiver(usbAttachReceiver);
         localBroadcastManager_.unregisterReceiver(connectionReceiver);
         receiversRegistered_ = false;
     }
@@ -150,6 +143,23 @@ public class MainActivity extends FragmentActivity {
         playerLaunchPending_ = false;
         ConnectionManager.instance().userExited(getString(R.string.connection_user_stopped));
         stopService(new Intent(this, ODAService.class));
+    }
+
+    /** Closes the task and terminates the process after service cleanup has run. */
+    public void exitApplication() {
+        exitSession();
+        finish();
+
+        Thread terminator = new Thread(() -> {
+            try {
+                Thread.sleep(750L);
+            } catch (InterruptedException ignored) {
+                Thread.currentThread().interrupt();
+            }
+            android.os.Process.killProcess(android.os.Process.myPid());
+            System.exit(0);
+        }, "ODA-app-exit");
+        terminator.start();
     }
 
     @Override

@@ -284,17 +284,26 @@ public class ODAService extends Service implements IAndroidAutoEntityEventHandle
             }
 
             AndroidAutoEntity entity = androidAutoEntity_;
+            LibUsbDevice sessionUsbDevice = MODE_USB.equals(currentMode_)
+                    ? usbManager_.aoapDevice() : null;
             if (entity != null) {
                 try {
                     entity.stop();
                 } catch (Throwable t) {
                     Log.e(TAG, "error stopping Android Auto entity", t);
                 }
+                if (sessionUsbDevice != null) {
+                    usbManager_.resetSession(sessionUsbDevice);
+                }
                 try {
                     entity.delete();
                 } catch (Throwable t) {
                     Log.e(TAG, "error deleting Android Auto entity", t);
                 }
+            }
+
+            if (sessionUsbDevice != null) {
+                usbManager_.finishSession(sessionUsbDevice);
             }
 
             Intent stopIntent = new Intent(ODAService.STOP_ACTION);
